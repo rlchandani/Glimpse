@@ -1,0 +1,405 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AA00000000000000000001 /* GlimpseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000010 /* GlimpseApp.swift */; };
+		AA00000000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000011 /* Assets.xcassets */; };
+		AA00000000000000000003 /* CalendarPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000015 /* CalendarPopoverView.swift */; };
+		AA00000000000000000004 /* DateIconRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000016 /* DateIconRenderer.swift */; };
+		AA00000000000000000005 /* CalendarPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000017 /* CalendarPreferences.swift */; };
+		AA00000000000000000006 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000018 /* PreferencesView.swift */; };
+		AA00000000000000000008 /* CalendarPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001A /* CalendarPanel.swift */; };
+		AA00000000000000000009 /* CalendarStatusItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001B /* CalendarStatusItem.swift */; };
+		AA0000000000000000000A /* StatusItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001C /* StatusItemView.swift */; };
+		AA0000000000000000000B /* CalendarGridHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001D /* CalendarGridHelper.swift */; };
+		BB00000000000000000020 /* CalendarPreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000010 /* CalendarPreferencesTests.swift */; };
+		BB00000000000000000021 /* CalendarGridHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000011 /* CalendarGridHelperTests.swift */; };
+		BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000012 /* MonthBorderShapeTests.swift */; };
+		BB00000000000000000023 /* DateIconRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000013 /* DateIconRendererTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		BB0000000000000000000A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA00000000000000000050 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA00000000000000000040;
+			remoteInfo = Glimpse;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		AA00000000000000000010 /* GlimpseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlimpseApp.swift; sourceTree = "<group>"; };
+		AA00000000000000000011 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA00000000000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA00000000000000000013 /* Glimpse.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Glimpse.entitlements; sourceTree = "<group>"; };
+		AA00000000000000000014 /* Glimpse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Glimpse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA00000000000000000015 /* CalendarPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPopoverView.swift; sourceTree = "<group>"; };
+		AA00000000000000000016 /* DateIconRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateIconRenderer.swift; sourceTree = "<group>"; };
+		AA00000000000000000017 /* CalendarPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPreferences.swift; sourceTree = "<group>"; };
+		AA00000000000000000018 /* PreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
+		AA0000000000000000001A /* CalendarPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPanel.swift; sourceTree = "<group>"; };
+		AA0000000000000000001B /* CalendarStatusItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarStatusItem.swift; sourceTree = "<group>"; };
+		AA0000000000000000001C /* StatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemView.swift; sourceTree = "<group>"; };
+		AA0000000000000000001D /* CalendarGridHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarGridHelper.swift; sourceTree = "<group>"; };
+		BB00000000000000000007 /* GlimpseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GlimpseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BB00000000000000000010 /* CalendarPreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPreferencesTests.swift; sourceTree = "<group>"; };
+		BB00000000000000000011 /* CalendarGridHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarGridHelperTests.swift; sourceTree = "<group>"; };
+		BB00000000000000000012 /* MonthBorderShapeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBorderShapeTests.swift; sourceTree = "<group>"; };
+		BB00000000000000000013 /* DateIconRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateIconRendererTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AA00000000000000000020 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB00000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AA00000000000000000030 /* Root */ = {
+			isa = PBXGroup;
+			children = (
+				AA00000000000000000031 /* Glimpse */,
+				BB00000000000000000008 /* GlimpseTests */,
+				AA00000000000000000032 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AA00000000000000000031 /* Glimpse */ = {
+			isa = PBXGroup;
+			children = (
+				AA00000000000000000010 /* GlimpseApp.swift */,
+				AA00000000000000000015 /* CalendarPopoverView.swift */,
+				AA00000000000000000016 /* DateIconRenderer.swift */,
+				AA00000000000000000017 /* CalendarPreferences.swift */,
+				AA00000000000000000018 /* PreferencesView.swift */,
+				AA0000000000000000001A /* CalendarPanel.swift */,
+				AA0000000000000000001B /* CalendarStatusItem.swift */,
+				AA0000000000000000001C /* StatusItemView.swift */,
+				AA0000000000000000001D /* CalendarGridHelper.swift */,
+				AA00000000000000000011 /* Assets.xcassets */,
+				AA00000000000000000012 /* Info.plist */,
+				AA00000000000000000013 /* Glimpse.entitlements */,
+			);
+			path = Glimpse;
+			sourceTree = "<group>";
+		};
+		AA00000000000000000032 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AA00000000000000000014 /* Glimpse.app */,
+				BB00000000000000000007 /* GlimpseTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BB00000000000000000008 /* GlimpseTests */ = {
+			isa = PBXGroup;
+			children = (
+				BB00000000000000000010 /* CalendarPreferencesTests.swift */,
+				BB00000000000000000011 /* CalendarGridHelperTests.swift */,
+				BB00000000000000000012 /* MonthBorderShapeTests.swift */,
+				BB00000000000000000013 /* DateIconRendererTests.swift */,
+			);
+			name = GlimpseTests;
+			path = GlimpseTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AA00000000000000000040 /* Glimpse */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA00000000000000000060 /* Build configuration list for PBXNativeTarget "Glimpse" */;
+			buildPhases = (
+				AA00000000000000000041 /* Sources */,
+				AA00000000000000000020 /* Frameworks */,
+				AA00000000000000000042 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Glimpse;
+			productName = Glimpse;
+			productReference = AA00000000000000000014 /* Glimpse.app */;
+			productType = "com.apple.product-type.application";
+		};
+		BB00000000000000000001 /* GlimpseTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB00000000000000000002 /* Build configuration list for PBXNativeTarget "GlimpseTests" */;
+			buildPhases = (
+				BB00000000000000000005 /* Sources */,
+				BB00000000000000000006 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BB00000000000000000009 /* PBXTargetDependency */,
+			);
+			name = GlimpseTests;
+			productName = GlimpseTests;
+			productReference = BB00000000000000000007 /* GlimpseTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA00000000000000000050 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = AA00000000000000000061 /* Build configuration list for PBXProject "Glimpse" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AA00000000000000000030 /* Root */;
+			productRefGroup = AA00000000000000000032 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AA00000000000000000040 /* Glimpse */,
+				BB00000000000000000001 /* GlimpseTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA00000000000000000042 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA00000000000000000002 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AA00000000000000000041 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA00000000000000000001 /* GlimpseApp.swift in Sources */,
+				AA00000000000000000003 /* CalendarPopoverView.swift in Sources */,
+				AA00000000000000000004 /* DateIconRenderer.swift in Sources */,
+				AA00000000000000000005 /* CalendarPreferences.swift in Sources */,
+				AA00000000000000000006 /* PreferencesView.swift in Sources */,
+				AA00000000000000000008 /* CalendarPanel.swift in Sources */,
+				AA00000000000000000009 /* CalendarStatusItem.swift in Sources */,
+				AA0000000000000000000A /* StatusItemView.swift in Sources */,
+				AA0000000000000000000B /* CalendarGridHelper.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB00000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB00000000000000000020 /* CalendarPreferencesTests.swift in Sources */,
+				BB00000000000000000021 /* CalendarGridHelperTests.swift in Sources */,
+				BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */,
+				BB00000000000000000023 /* DateIconRendererTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BB00000000000000000009 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA00000000000000000040 /* Glimpse */;
+			targetProxy = BB0000000000000000000A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		AA00000000000000000070 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AA00000000000000000071 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		AA00000000000000000072 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Glimpse/Glimpse.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Glimpse/Info.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rohit.Glimpse;
+				PRODUCT_MODULE_NAME = Glimpse;
+				PRODUCT_NAME = Glimpse;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		AA00000000000000000073 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Glimpse/Glimpse.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Glimpse/Info.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rohit.Glimpse;
+				PRODUCT_MODULE_NAME = Glimpse;
+				PRODUCT_NAME = Glimpse;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		BB00000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rohit.GlimpseTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Glimpse.app/Contents/MacOS/Glimpse";
+			};
+			name = Debug;
+		};
+		BB00000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rohit.GlimpseTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Glimpse.app/Contents/MacOS/Glimpse";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA00000000000000000060 /* Build configuration list for PBXNativeTarget "Glimpse" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA00000000000000000072 /* Debug */,
+				AA00000000000000000073 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA00000000000000000061 /* Build configuration list for PBXProject "Glimpse" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA00000000000000000070 /* Debug */,
+				AA00000000000000000071 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB00000000000000000002 /* Build configuration list for PBXNativeTarget "GlimpseTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB00000000000000000003 /* Debug */,
+				BB00000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = AA00000000000000000050 /* Project object */;
+}
