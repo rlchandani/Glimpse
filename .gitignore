@@ -11,6 +11,9 @@ xcuserdata/
 *.dSYM.zip
 *.dSYM
 
+# Build artifacts
+*.app
+
 # macOS
 .DS_Store
 .AppleDouble
