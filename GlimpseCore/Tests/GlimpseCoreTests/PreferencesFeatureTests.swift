@@ -89,6 +89,74 @@ struct PreferencesFeatureTests {
     }
 
     @Test
+    func setShowDayOfWeek_savesAndNotifies() async {
+        let store = TestStore(
+            initialState: PreferencesFeature.State()
+        ) {
+            PreferencesFeature()
+        } withDependencies: {
+            $0.preferencesClient.saveDisplayOptions = { _ in }
+        }
+
+        await store.send(.setShowDayOfWeek(false)) {
+            $0.displayOptions.showDayOfWeek = false
+        }
+
+        await store.receive(\.delegate.displayOptionsChanged)
+    }
+
+    @Test
+    func setShowMonth_savesAndNotifies() async {
+        let store = TestStore(
+            initialState: PreferencesFeature.State()
+        ) {
+            PreferencesFeature()
+        } withDependencies: {
+            $0.preferencesClient.saveDisplayOptions = { _ in }
+        }
+
+        await store.send(.setShowMonth(false)) {
+            $0.displayOptions.showMonth = false
+        }
+
+        await store.receive(\.delegate.displayOptionsChanged)
+    }
+
+    @Test
+    func setShowDate_savesAndNotifies() async {
+        let store = TestStore(
+            initialState: PreferencesFeature.State()
+        ) {
+            PreferencesFeature()
+        } withDependencies: {
+            $0.preferencesClient.saveDisplayOptions = { _ in }
+        }
+
+        await store.send(.setShowDate(false)) {
+            $0.displayOptions.showDate = false
+        }
+
+        await store.receive(\.delegate.displayOptionsChanged)
+    }
+
+    @Test
+    func setShowYear_savesAndNotifies() async {
+        let store = TestStore(
+            initialState: PreferencesFeature.State()
+        ) {
+            PreferencesFeature()
+        } withDependencies: {
+            $0.preferencesClient.saveDisplayOptions = { _ in }
+        }
+
+        await store.send(.setShowYear(true)) {
+            $0.displayOptions.showYear = true
+        }
+
+        await store.receive(\.delegate.displayOptionsChanged)
+    }
+
+    @Test
     func setLaunchAtLogin_success() async {
         let store = TestStore(
             initialState: PreferencesFeature.State()
