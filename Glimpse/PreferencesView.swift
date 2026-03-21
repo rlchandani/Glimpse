@@ -6,9 +6,10 @@ struct PreferencesView: View {
     private let allWeekdays = Array(1...7)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: AppDesign.Spacing.md) {
             Text("Preferences")
                 .font(.headline)
+                .accessibilityAddTraits(.isHeader)
 
             menuBarDisplaySection
             startOfWeekPicker
@@ -22,7 +23,7 @@ struct PreferencesView: View {
     // MARK: - Menu Bar Display
 
     private var menuBarDisplaySection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: AppDesign.Spacing.sm) {
             Text("Menu bar display:")
                 .font(.subheadline)
 
@@ -35,29 +36,35 @@ struct PreferencesView: View {
             }
             .font(.caption)
 
-            // Live preview
             let preview = preferences.menuBarDateString()
             let showIcon = preferences.showIcon || preview.isEmpty
             HStack(spacing: 0) {
                 if showIcon {
                     Image(nsImage: DateIconRenderer.render())
-                        .padding(.horizontal, 6)
+                        .padding(.horizontal, AppDesign.StatusItem.padding)
                 }
                 if showIcon && !preview.isEmpty {
                     Divider()
-                        .frame(height: 16)
+                        .frame(height: AppDesign.Spacing.md)
                 }
                 if !preview.isEmpty {
                     Text(preview)
-                        .font(.system(size: 12, weight: .medium))
-                        .padding(.horizontal, 6)
+                        .font(.system(
+                            size: AppDesign.StatusItem.fontSize, weight: .medium
+                        ))
+                        .padding(.horizontal, AppDesign.StatusItem.padding)
                 }
             }
             .padding(.vertical, 3)
             .overlay(
-                RoundedRectangle(cornerRadius: 5)
-                    .strokeBorder(Color.secondary.opacity(0.3), lineWidth: 1)
+                RoundedRectangle(cornerRadius: AppDesign.StatusItem.borderCornerRadius)
+                    .strokeBorder(
+                        Color.secondary.opacity(AppDesign.StatusItem.borderOpacity),
+                        lineWidth: 1
+                    )
             )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Preview: \(showIcon ? "icon" : "") \(preview)")
         }
     }
 
@@ -68,7 +75,7 @@ struct PreferencesView: View {
             Text("Week starts on:")
                 .font(.subheadline)
             Spacer()
-            Picker("", selection: $preferences.startOfWeekday) {
+            Picker("Week start day", selection: $preferences.startOfWeekday) {
                 ForEach(allWeekdays, id: \.self) { weekday in
                     Text(preferences.weekdayName(for: weekday))
                         .tag(weekday)
@@ -76,41 +83,50 @@ struct PreferencesView: View {
             }
             .labelsHidden()
             .frame(width: 120)
+            .accessibilityLabel("Week starts on")
         }
     }
 
     // MARK: - Workday Selection
 
     private var workdaySelector: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: AppDesign.Spacing.sm) {
             Text("Workdays:")
                 .font(.subheadline)
 
-            HStack(spacing: 6) {
+            HStack(spacing: AppDesign.Spacing.sm - 2) {
                 ForEach(allWeekdays, id: \.self) { weekday in
                     workdayToggle(weekday)
                 }
             }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Workday selection")
     }
 
     private func workdayToggle(_ weekday: Int) -> some View {
         let isSelected = preferences.isWorkday(weekday)
         let symbol = Calendar.current.veryShortWeekdaySymbols[weekday - 1]
+        let fullName = Calendar.current.weekdaySymbols[weekday - 1]
 
         return Button {
             preferences.toggleWorkday(weekday)
         } label: {
             Text(symbol)
                 .font(.caption.weight(isSelected ? .bold : .regular))
-                .frame(width: 28, height: 28)
+                .frame(
+                    width: AppDesign.Grid.todayCircleSize,
+                    height: AppDesign.Grid.todayCircleSize
+                )
                 .background(
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: AppDesign.CornerRadius.sm + 2)
                         .fill(isSelected ? Color.accentColor : Color.clear)
                 )
                 .foregroundStyle(isSelected ? .white : .secondary)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(fullName), \(isSelected ? "workday" : "not a workday")")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: - Launch at Login

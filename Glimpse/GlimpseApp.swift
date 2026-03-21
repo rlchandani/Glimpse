@@ -1,6 +1,7 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let calendarStatusItem = CalendarStatusItem()
 
@@ -14,8 +15,6 @@ struct GlimpseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        // Calendar is managed by AppDelegate via NSStatusItem.
-        // This empty Settings scene satisfies the App protocol requirement.
         Settings {
             EmptyView()
         }

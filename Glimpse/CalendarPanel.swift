@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 final class CalendarPanel: NSPanel {
     static let panelWidth: CGFloat = 316
     static let panelHeight: CGFloat = 420

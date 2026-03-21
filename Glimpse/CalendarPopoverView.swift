@@ -33,7 +33,7 @@ struct CalendarPopoverView: View {
             }
             .padding()
             .background(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: AppDesign.CornerRadius.lg)
                     .fill(.regularMaterial)
             )
         }
@@ -41,20 +41,22 @@ struct CalendarPopoverView: View {
         .onAppear {
             keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
                 switch event.keyCode {
-                case 123: // Left arrow
+                case 123:
                     goToPreviousMonth()
                     return nil
-                case 124: // Right arrow
+                case 124:
                     goToNextMonth()
                     return nil
-                case 36, 76: // Return, Enter
+                case 36, 76:
                     if !isShowingCurrentMonth {
                         goToToday()
                     }
                     return nil
-                case 53: // Escape
+                case 53:
                     if showingPreferences {
-                        withAnimation { showingPreferences = false }
+                        withAnimation(AppDesign.Animation.standard) {
+                            showingPreferences = false
+                        }
                     } else {
                         panel?.isPinned = false
                         panel?.orderOut(nil)
@@ -99,11 +101,11 @@ struct CalendarPopoverView: View {
 
     private var caretView: some View {
         GeometryReader { geometry in
-            let caretWidth: CGFloat = 20
+            let caretWidth = AppDesign.Caret.width
             let xOffset = panel?.caretXOffset ?? geometry.size.width / 2
 
             Path { path in
-                let r: CGFloat = 3
+                let r = AppDesign.Caret.tipRadius
                 path.move(to: CGPoint(x: xOffset - caretWidth / 2, y: caretHeight))
                 path.addLine(to: CGPoint(x: xOffset - r, y: r))
                 path.addQuadCurve(
@@ -123,16 +125,18 @@ struct CalendarPopoverView: View {
         HStack {
             Text(monthYearString)
                 .font(.headline)
+                .accessibilityAddTraits(.isHeader)
 
             Spacer()
 
-            HStack(spacing: 10) {
+            HStack(spacing: AppDesign.Spacing.sm + 2) {
                 Button(action: goToPreviousMonth) {
                     Image(systemName: "chevron.left")
                         .font(.body.weight(.semibold))
                 }
                 .buttonStyle(.plain)
                 .focusable(false)
+                .accessibilityLabel("Previous month")
 
                 Button(action: goToToday) {
                     Image(systemName: "circle.fill")
@@ -146,7 +150,7 @@ struct CalendarPopoverView: View {
                 .buttonStyle(.plain)
                 .focusable(false)
                 .disabled(isShowingCurrentMonth)
-                .help("Go to today")
+                .accessibilityLabel("Go to today")
 
                 Button(action: goToNextMonth) {
                     Image(systemName: "chevron.right")
@@ -154,6 +158,7 @@ struct CalendarPopoverView: View {
                 }
                 .buttonStyle(.plain)
                 .focusable(false)
+                .accessibilityLabel("Next month")
             }
         }
     }
@@ -167,13 +172,12 @@ struct CalendarPopoverView: View {
         let gridInfo = monthGridInfo(days: days)
         let shortNames = Calendar.current.shortWeekdaySymbols
 
-        return VStack(spacing: 4) {
-            // Day-of-week header row
+        return VStack(spacing: AppDesign.Spacing.xs) {
             HStack(spacing: 0) {
                 Text("Wk")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
-                    .frame(width: 28)
+                    .frame(width: AppDesign.Grid.weekNumberWidth)
 
                 ForEach(orderedDays, id: \.index) { day in
                     let isWeekend = day.index == 1 || day.index == 7
@@ -181,10 +185,10 @@ struct CalendarPopoverView: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(isWeekend ? .primary : .secondary)
                         .frame(maxWidth: .infinity)
+                        .accessibilityLabel(Calendar.current.weekdaySymbols[day.index - 1])
                 }
             }
 
-            // Week numbers + day cells
             HStack(alignment: .top, spacing: 0) {
                 VStack(spacing: 0) {
                     ForEach(0..<6, id: \.self) { row in
@@ -192,7 +196,11 @@ struct CalendarPopoverView: View {
                         Text("\(cal.component(.weekOfYear, from: weekDate))")
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
-                            .frame(width: 28, height: 30)
+                            .frame(
+                                width: AppDesign.Grid.weekNumberWidth,
+                                height: AppDesign.Grid.cellHeight
+                            )
+                            .accessibilityLabel("Week \(cal.component(.weekOfYear, from: weekDate))")
                     }
                 }
 
@@ -214,15 +222,23 @@ struct CalendarPopoverView: View {
                         endCol: gridInfo.endCol,
                         endRow: gridInfo.endRow
                     )
-                    .stroke(Color.secondary.opacity(0.4), lineWidth: 1)
+                    .stroke(
+                        Color.secondary.opacity(AppDesign.Grid.monthBorderOpacity),
+                        lineWidth: 1
+                    )
                 }
             }
         }
-        .padding(8)
+        .padding(AppDesign.Spacing.sm)
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(Color.secondary.opacity(0.25), lineWidth: 1)
+            RoundedRectangle(cornerRadius: AppDesign.CornerRadius.lg)
+                .strokeBorder(
+                    Color.secondary.opacity(AppDesign.Grid.borderOpacity),
+                    lineWidth: 1
+                )
         )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Calendar grid for \(monthYearString)")
     }
 
     private func monthGridInfo(days: [CalendarDay]) -> (startCol: Int, endCol: Int, endRow: Int) {
@@ -235,36 +251,52 @@ struct CalendarPopoverView: View {
         isWorkdayColumn: Bool
     ) -> some View {
         let isToday = day.isCurrentMonth && cal.isDateInToday(day.date)
+        let dayNumber = cal.component(.day, from: day.date)
 
-        return Text("\(cal.component(.day, from: day.date))")
+        return Text("\(dayNumber)")
             .font(.system(.body, design: .rounded))
             .fontWeight(isToday ? .bold : .regular)
             .foregroundStyle(foregroundColor(for: day, isToday: isToday))
             .frame(maxWidth: .infinity)
-            .frame(height: 30)
+            .frame(height: AppDesign.Grid.cellHeight)
             .background {
                 if isToday {
                     Circle()
                         .fill(Color.accentColor)
-                        .frame(width: 28, height: 28)
+                        .frame(
+                            width: AppDesign.Grid.todayCircleSize,
+                            height: AppDesign.Grid.todayCircleSize
+                        )
                 } else if isWorkdayColumn && day.isCurrentMonth {
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.accentColor.opacity(0.08))
+                        .fill(Color.accentColor.opacity(AppDesign.Grid.workdayTintOpacity))
                 }
             }
             .foregroundStyle(isToday ? .white : foregroundColor(for: day, isToday: false))
+            .accessibilityLabel(dayAccessibilityLabel(day, dayNumber: dayNumber, isToday: isToday))
+    }
+
+    private func dayAccessibilityLabel(
+        _ day: CalendarDay, dayNumber: Int, isToday: Bool
+    ) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long
+        var label = formatter.string(from: day.date)
+        if isToday { label += ", today" }
+        if !day.isCurrentMonth { label += ", outside current month" }
+        return label
     }
 
     private func foregroundColor(for day: CalendarDay, isToday: Bool) -> Color {
         if isToday { return .white }
-        if !day.isCurrentMonth { return .secondary.opacity(0.4) }
+        if !day.isCurrentMonth { return .secondary.opacity(AppDesign.Grid.dimmedTextOpacity) }
         return .primary
     }
 
     // MARK: - Footer
 
     private var footerView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             Divider()
             HStack {
                 Spacer()
@@ -280,7 +312,7 @@ struct CalendarPopoverView: View {
                 }
                 .buttonStyle(.plain)
                 .focusable(false)
-                .help(isPinned ? "Unpin window" : "Pin window")
+                .accessibilityLabel(isPinned ? "Unpin window" : "Pin window")
 
                 Button(action: openAppleCalendar) {
                     Image(systemName: "calendar")
@@ -289,10 +321,10 @@ struct CalendarPopoverView: View {
                 }
                 .buttonStyle(.plain)
                 .focusable(false)
-                .help("Open Calendar app")
+                .accessibilityLabel("Open Calendar app")
 
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(AppDesign.Animation.standard) {
                         showingPreferences.toggle()
                     }
                 } label: {
@@ -302,7 +334,7 @@ struct CalendarPopoverView: View {
                 }
                 .buttonStyle(.plain)
                 .focusable(false)
-                .help("Preferences")
+                .accessibilityLabel(showingPreferences ? "Close preferences" : "Open preferences")
             }
         }
     }
@@ -359,7 +391,7 @@ struct MonthBorderShape: Shape {
     let startCol: Int
     let endCol: Int
     let endRow: Int
-    let cornerRadius: CGFloat = 8
+    let cornerRadius: CGFloat = AppDesign.CornerRadius.md
 
     func path(in rect: CGRect) -> Path {
         let cw = rect.width / 7
@@ -367,49 +399,35 @@ struct MonthBorderShape: Shape {
         let r = cornerRadius
 
         var vertices: [CGPoint] = []
-
         let hasTopStep = startCol > 0
         let hasBottomStep = endCol < 6
 
-        // Build vertices clockwise starting from top-left area
-
         if hasTopStep {
-            // Top of first day
             vertices.append(CGPoint(x: CGFloat(startCol) * cw, y: 0))
         } else {
             vertices.append(CGPoint(x: 0, y: 0))
         }
 
-        // Top-right
         vertices.append(CGPoint(x: rect.width, y: 0))
 
         if hasBottomStep {
-            // Right side down to the step row
             vertices.append(CGPoint(x: rect.width, y: CGFloat(endRow) * ch))
-            // Step inward
             vertices.append(CGPoint(x: CGFloat(endCol + 1) * cw, y: CGFloat(endRow) * ch))
-            // Down to bottom of last month row
             vertices.append(CGPoint(x: CGFloat(endCol + 1) * cw, y: CGFloat(endRow + 1) * ch))
         } else {
-            // Right side all the way down
             vertices.append(CGPoint(x: rect.width, y: CGFloat(endRow + 1) * ch))
         }
 
-        // Bottom-left
         if hasTopStep {
             vertices.append(CGPoint(x: 0, y: CGFloat(endRow + 1) * ch))
-            // Left side up to step
             vertices.append(CGPoint(x: 0, y: ch))
-            // Step outward to first day
             vertices.append(CGPoint(x: CGFloat(startCol) * cw, y: ch))
         } else {
             vertices.append(CGPoint(x: 0, y: CGFloat(endRow + 1) * ch))
         }
 
-        // Trace path with rounded corners
         var path = Path()
         let count = vertices.count
-
         let start = midpoint(vertices[count - 1], vertices[0])
         path.move(to: start)
 

@@ -1,5 +1,6 @@
 import AppKit
 
+@MainActor
 final class StatusItemView: NSView {
     private let iconView = NSImageView()
     private let separatorView = NSView()
@@ -18,9 +19,10 @@ final class StatusItemView: NSView {
         wantsLayer = true
 
         borderLayer.name = "border"
-        borderLayer.cornerRadius = 5
-        borderLayer.borderWidth = 1
-        borderLayer.borderColor = NSColor.secondaryLabelColor.withAlphaComponent(0.3).cgColor
+        borderLayer.cornerRadius = AppDesign.StatusItem.borderCornerRadius
+        borderLayer.borderWidth = AppDesign.StatusItem.borderWidth
+        borderLayer.borderColor = AppDesign.Colors.menuBarBorder
+            .withAlphaComponent(AppDesign.StatusItem.borderOpacity).cgColor
         layer?.addSublayer(borderLayer)
 
         iconView.translatesAutoresizingMaskIntoConstraints = false
@@ -29,18 +31,27 @@ final class StatusItemView: NSView {
 
         separatorView.translatesAutoresizingMaskIntoConstraints = false
         separatorView.wantsLayer = true
-        separatorView.layer?.backgroundColor = NSColor.secondaryLabelColor.withAlphaComponent(0.3).cgColor
+        separatorView.layer?.backgroundColor = AppDesign.Colors.menuBarSeparator
+            .withAlphaComponent(AppDesign.StatusItem.borderOpacity).cgColor
         addSubview(separatorView)
 
         textLabel.translatesAutoresizingMaskIntoConstraints = false
-        textLabel.font = NSFont.systemFont(ofSize: 12, weight: .medium)
-        textLabel.textColor = .white
+        textLabel.font = NSFont.systemFont(
+            ofSize: AppDesign.StatusItem.fontSize, weight: .medium
+        )
+        textLabel.textColor = AppDesign.Colors.menuBarText
         textLabel.alignment = .center
         addSubview(textLabel)
+
+        setAccessibilityLabel("Glimpse Calendar")
+        setAccessibilityRole(.button)
     }
 
     func update(icon: NSImage?, text: String, showIcon: Bool) {
         let hasText = !text.isEmpty
+        let padding = AppDesign.StatusItem.padding
+        let innerPadding = AppDesign.StatusItem.innerPadding
+        let iconSize = AppDesign.Icon.menuBarSize
 
         iconView.image = icon
         iconView.isHidden = !showIcon
@@ -48,59 +59,70 @@ final class StatusItemView: NSView {
         textLabel.stringValue = text
         textLabel.isHidden = !hasText
 
-        // Remove old constraints
         removeConstraints(constraints)
         iconView.removeConstraints(iconView.constraints)
 
         var viewConstraints: [NSLayoutConstraint] = []
-        let padding: CGFloat = 6
-        let innerPadding: CGFloat = 4
 
         if showIcon && hasText {
-            // Icon | separator | text
             viewConstraints += [
                 iconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: padding),
                 iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
-                iconView.widthAnchor.constraint(equalToConstant: 18),
-                iconView.heightAnchor.constraint(equalToConstant: 18),
+                iconView.widthAnchor.constraint(equalToConstant: iconSize),
+                iconView.heightAnchor.constraint(equalToConstant: iconSize),
 
-                separatorView.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: innerPadding),
-                separatorView.topAnchor.constraint(equalTo: topAnchor, constant: 4),
-                separatorView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
+                separatorView.leadingAnchor.constraint(
+                    equalTo: iconView.trailingAnchor, constant: innerPadding
+                ),
+                separatorView.topAnchor.constraint(
+                    equalTo: topAnchor, constant: AppDesign.StatusItem.separatorInset
+                ),
+                separatorView.bottomAnchor.constraint(
+                    equalTo: bottomAnchor, constant: -AppDesign.StatusItem.separatorInset
+                ),
                 separatorView.widthAnchor.constraint(equalToConstant: 1),
 
-                textLabel.leadingAnchor.constraint(equalTo: separatorView.trailingAnchor, constant: innerPadding),
+                textLabel.leadingAnchor.constraint(
+                    equalTo: separatorView.trailingAnchor, constant: innerPadding
+                ),
                 textLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-                textLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -padding),
+                textLabel.trailingAnchor.constraint(
+                    equalTo: trailingAnchor, constant: -padding
+                ),
             ]
         } else if showIcon {
-            // Icon only
             viewConstraints += [
                 iconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: padding),
                 iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
-                iconView.widthAnchor.constraint(equalToConstant: 18),
-                iconView.heightAnchor.constraint(equalToConstant: 18),
-                iconView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -padding),
+                iconView.widthAnchor.constraint(equalToConstant: iconSize),
+                iconView.heightAnchor.constraint(equalToConstant: iconSize),
+                iconView.trailingAnchor.constraint(
+                    equalTo: trailingAnchor, constant: -padding
+                ),
             ]
         } else if hasText {
-            // Text only
             viewConstraints += [
-                textLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: padding),
+                textLabel.leadingAnchor.constraint(
+                    equalTo: leadingAnchor, constant: padding
+                ),
                 textLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-                textLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -padding),
+                textLabel.trailingAnchor.constraint(
+                    equalTo: trailingAnchor, constant: -padding
+                ),
             ]
         }
 
         NSLayoutConstraint.activate(viewConstraints)
         needsLayout = true
 
-        // Calculate intrinsic width
         textLabel.sizeToFit()
         var width = padding * 2
-        if showIcon { width += 18 }
-        if showIcon && hasText { width += innerPadding * 2 + 1 } // separator + padding
+        if showIcon { width += iconSize }
+        if showIcon && hasText { width += innerPadding * 2 + 1 }
         if hasText { width += textLabel.frame.width }
         frame.size.width = ceil(width)
+
+        setAccessibilityValue(text.isEmpty ? "Calendar" : text)
     }
 
     override func layout() {
@@ -109,6 +131,6 @@ final class StatusItemView: NSView {
     }
 
     override var intrinsicContentSize: NSSize {
-        NSSize(width: frame.width, height: 30)
+        NSSize(width: frame.width, height: AppDesign.StatusItem.height)
     }
 }

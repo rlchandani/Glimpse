@@ -17,10 +17,13 @@
 		AA00000000000000000009 /* CalendarStatusItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001B /* CalendarStatusItem.swift */; };
 		AA0000000000000000000A /* StatusItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001C /* StatusItemView.swift */; };
 		AA0000000000000000000B /* CalendarGridHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001D /* CalendarGridHelper.swift */; };
+		AA0000000000000000000C /* AppDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001E /* AppDesign.swift */; };
+		AA0000000000000000000D /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001F /* AppLogger.swift */; };
 		BB00000000000000000020 /* CalendarPreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000010 /* CalendarPreferencesTests.swift */; };
 		BB00000000000000000021 /* CalendarGridHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000011 /* CalendarGridHelperTests.swift */; };
 		BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000012 /* MonthBorderShapeTests.swift */; };
 		BB00000000000000000023 /* DateIconRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000013 /* DateIconRendererTests.swift */; };
+		BB00000000000000000024 /* AppDesignTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000014 /* AppDesignTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,11 +50,14 @@
 		AA0000000000000000001B /* CalendarStatusItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarStatusItem.swift; sourceTree = "<group>"; };
 		AA0000000000000000001C /* StatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemView.swift; sourceTree = "<group>"; };
 		AA0000000000000000001D /* CalendarGridHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarGridHelper.swift; sourceTree = "<group>"; };
+		AA0000000000000000001E /* AppDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDesign.swift; sourceTree = "<group>"; };
+		AA0000000000000000001F /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
 		BB00000000000000000007 /* GlimpseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GlimpseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB00000000000000000010 /* CalendarPreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPreferencesTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000011 /* CalendarGridHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarGridHelperTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000012 /* MonthBorderShapeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBorderShapeTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000013 /* DateIconRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateIconRendererTests.swift; sourceTree = "<group>"; };
+		BB00000000000000000014 /* AppDesignTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDesignTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,6 +99,8 @@
 				AA0000000000000000001B /* CalendarStatusItem.swift */,
 				AA0000000000000000001C /* StatusItemView.swift */,
 				AA0000000000000000001D /* CalendarGridHelper.swift */,
+				AA0000000000000000001E /* AppDesign.swift */,
+				AA0000000000000000001F /* AppLogger.swift */,
 				AA00000000000000000011 /* Assets.xcassets */,
 				AA00000000000000000012 /* Info.plist */,
 				AA00000000000000000013 /* Glimpse.entitlements */,
@@ -116,6 +124,7 @@
 				BB00000000000000000011 /* CalendarGridHelperTests.swift */,
 				BB00000000000000000012 /* MonthBorderShapeTests.swift */,
 				BB00000000000000000013 /* DateIconRendererTests.swift */,
+				BB00000000000000000014 /* AppDesignTests.swift */,
 			);
 			name = GlimpseTests;
 			path = GlimpseTests;
@@ -212,6 +221,8 @@
 				AA00000000000000000009 /* CalendarStatusItem.swift in Sources */,
 				AA0000000000000000000A /* StatusItemView.swift in Sources */,
 				AA0000000000000000000B /* CalendarGridHelper.swift in Sources */,
+				AA0000000000000000000C /* AppDesign.swift in Sources */,
+				AA0000000000000000000D /* AppLogger.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -223,6 +234,7 @@
 				BB00000000000000000021 /* CalendarGridHelperTests.swift in Sources */,
 				BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */,
 				BB00000000000000000023 /* DateIconRendererTests.swift in Sources */,
+				BB00000000000000000024 /* AppDesignTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -308,7 +320,8 @@
 				PRODUCT_MODULE_NAME = Glimpse;
 				PRODUCT_NAME = Glimpse;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -332,7 +345,8 @@
 				PRODUCT_MODULE_NAME = Glimpse;
 				PRODUCT_NAME = Glimpse;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -347,7 +361,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.rohit.GlimpseTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Glimpse.app/Contents/MacOS/Glimpse";
 			};
 			name = Debug;
@@ -363,7 +378,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.rohit.GlimpseTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Glimpse.app/Contents/MacOS/Glimpse";
 			};
 			name = Release;

@@ -1,5 +1,6 @@
 import AppKit
 
+@MainActor
 final class CalendarStatusItem {
     private var statusItem: NSStatusItem?
     private var statusItemView: StatusItemView?
@@ -9,18 +10,23 @@ final class CalendarStatusItem {
     func setup() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
-        let view = StatusItemView(frame: NSRect(x: 0, y: 0, width: 30, height: 30))
+        let view = StatusItemView(
+            frame: NSRect(x: 0, y: 0, width: 30, height: AppDesign.StatusItem.height)
+        )
         statusItemView = view
         statusItem?.button?.addSubview(view)
         statusItem?.button?.target = self
         statusItem?.button?.action = #selector(statusItemClicked)
 
         CalendarPreferences.shared.onMenuBarDisplayChanged = { [weak self] in
-            self?.updateMenuBarDisplay()
+            Task { @MainActor in
+                self?.updateMenuBarDisplay()
+            }
         }
 
         updateMenuBarDisplay()
         scheduleMidnightRefresh()
+        AppLogger.statusItem.info("Status item configured")
     }
 
     func updateMenuBarDisplay() {
@@ -35,26 +41,30 @@ final class CalendarStatusItem {
 
         view.update(icon: icon, text: dateString, showIcon: showIcon)
 
-        // Resize the status item to fit the custom view
         button.frame.size = view.frame.size
         statusItem?.length = view.frame.width
         view.frame = button.bounds
     }
 
     private func scheduleMidnightRefresh() {
-        // Refresh the display at midnight so the date/icon update
         let cal = Calendar.current
         guard let tomorrow = cal.date(byAdding: .day, value: 1, to: Date()),
               let midnight = cal.date(bySettingHour: 0, minute: 0, second: 1, of: tomorrow)
-        else { return }
+        else {
+            AppLogger.statusItem.error("Failed to compute next midnight for refresh")
+            return
+        }
 
         let interval = midnight.timeIntervalSinceNow
         midnightTimer = Timer.scheduledTimer(
             withTimeInterval: interval,
             repeats: false
         ) { [weak self] _ in
-            self?.updateMenuBarDisplay()
-            self?.scheduleMidnightRefresh()
+            Task { @MainActor in
+                self?.updateMenuBarDisplay()
+                self?.scheduleMidnightRefresh()
+                AppLogger.statusItem.info("Midnight refresh completed")
+            }
         }
     }
 
@@ -118,17 +128,16 @@ final class CalendarStatusItem {
         let panelHeight = CalendarPanel.panelHeight
         let caretHeight = CalendarPanel.caretHeight
         let gapBelowMenuBar = CalendarPanel.gapBelowMenuBar
+        let edgeMargin: CGFloat = 10
 
         var panelX = round(statusItemRect.midX - panelWidth / 2)
         let panelY = statusItemRect.minY - panelHeight - caretHeight - gapBelowMenuBar
 
-        let screenMaxX = screen.frame.maxX
-        let screenMinX = screen.frame.minX
-        if panelX + panelWidth + 10 > screenMaxX {
-            panelX = screenMaxX - panelWidth - 10
+        if panelX + panelWidth + edgeMargin > screen.frame.maxX {
+            panelX = screen.frame.maxX - panelWidth - edgeMargin
         }
-        if panelX < screenMinX + 10 {
-            panelX = screenMinX + 10
+        if panelX < screen.frame.minX + edgeMargin {
+            panelX = screen.frame.minX + edgeMargin
         }
 
         let caretOffset = max(16, min(statusItemRect.midX - panelX, panelWidth - 16))

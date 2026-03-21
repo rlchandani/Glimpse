@@ -1,7 +1,8 @@
-import SwiftUI
+import os
 import ServiceManagement
+import SwiftUI
 
-@Observable
+@MainActor @Observable
 final class CalendarPreferences {
     static let shared = CalendarPreferences()
 
@@ -10,22 +11,29 @@ final class CalendarPreferences {
     }
 
     var workdays: Set<Int> {
-        didSet {
-            UserDefaults.standard.set(Array(workdays), forKey: "workdays")
-        }
+        didSet { UserDefaults.standard.set(Array(workdays), forKey: "workdays") }
     }
 
     var launchAtLogin: Bool {
         didSet {
-            if launchAtLogin {
-                try? SMAppService.mainApp.register()
-            } else {
-                try? SMAppService.mainApp.unregister()
+            do {
+                if launchAtLogin {
+                    try SMAppService.mainApp.register()
+                    AppLogger.preferences.info("Registered for launch at login")
+                } else {
+                    try SMAppService.mainApp.unregister()
+                    AppLogger.preferences.info("Unregistered from launch at login")
+                }
+            } catch {
+                AppLogger.preferences.error(
+                    "Failed to update launch at login: \(error.localizedDescription)"
+                )
+                // Revert the toggle to match actual state
+                launchAtLogin = SMAppService.mainApp.status == .enabled
             }
         }
     }
 
-    // Menu bar display options
     var showDayOfWeek: Bool {
         didSet {
             UserDefaults.standard.set(showDayOfWeek, forKey: "showDayOfWeek")
@@ -61,7 +69,7 @@ final class CalendarPreferences {
         }
     }
 
-    var onMenuBarDisplayChanged: (() -> Void)?
+    var onMenuBarDisplayChanged: (@Sendable () -> Void)?
 
     private static func loadBool(_ key: String, defaultValue: Bool) -> Bool {
         UserDefaults.standard.object(forKey: key) != nil
@@ -88,6 +96,8 @@ final class CalendarPreferences {
         self.showDate = Self.loadBool("showDate", defaultValue: true)
         self.showYear = Self.loadBool("showYear", defaultValue: false)
         self.showIcon = Self.loadBool("showIcon", defaultValue: true)
+
+        AppLogger.preferences.info("Preferences loaded")
     }
 
     var calendar: Calendar {

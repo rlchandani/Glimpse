@@ -1,6 +1,7 @@
 import XCTest
 @testable import Glimpse
 
+@MainActor
 final class CalendarPreferencesTests: XCTestCase {
 
     private var prefs: CalendarPreferences!
