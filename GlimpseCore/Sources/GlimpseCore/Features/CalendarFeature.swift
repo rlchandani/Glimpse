@@ -39,6 +39,8 @@ public struct CalendarFeature: Sendable {
         case onAppear
         case goToPreviousMonth
         case goToNextMonth
+        case goToPreviousYear
+        case goToNextYear
         case goToToday
         case togglePin
         case togglePreferences
@@ -72,6 +74,24 @@ public struct CalendarFeature: Sendable {
             case .goToNextMonth:
                 if let next = state.calendar.date(
                     byAdding: .month, value: 1, to: state.displayedMonth
+                ) {
+                    state.displayedMonth = next
+                    recomputeDays(&state)
+                }
+                return .none
+
+            case .goToPreviousYear:
+                if let prev = state.calendar.date(
+                    byAdding: .year, value: -1, to: state.displayedMonth
+                ) {
+                    state.displayedMonth = prev
+                    recomputeDays(&state)
+                }
+                return .none
+
+            case .goToNextYear:
+                if let next = state.calendar.date(
+                    byAdding: .year, value: 1, to: state.displayedMonth
                 ) {
                     state.displayedMonth = next
                     recomputeDays(&state)

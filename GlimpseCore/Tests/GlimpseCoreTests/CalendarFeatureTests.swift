@@ -73,6 +73,46 @@ struct CalendarFeatureTests {
     }
 
     @Test
+    func goToNextYear_advancesYear() async {
+        let cal = Calendar.current
+        let mar2026 = cal.date(from: DateComponents(year: 2026, month: 3, day: 15))!
+        let mar2027 = cal.date(from: DateComponents(year: 2027, month: 3, day: 15))!
+
+        let store = TestStore(
+            initialState: CalendarFeature.State(displayedMonth: mar2026)
+        ) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.calendarClient.calendarDays = { _, _ in [] }
+            $0.calendarClient.gridInfo = { _ in GridInfo(startCol: 0, endCol: 6, endRow: 5) }
+        }
+
+        await store.send(.goToNextYear) {
+            $0.displayedMonth = mar2027
+        }
+    }
+
+    @Test
+    func goToPreviousYear_goesBack() async {
+        let cal = Calendar.current
+        let mar2026 = cal.date(from: DateComponents(year: 2026, month: 3, day: 15))!
+        let mar2025 = cal.date(from: DateComponents(year: 2025, month: 3, day: 15))!
+
+        let store = TestStore(
+            initialState: CalendarFeature.State(displayedMonth: mar2026)
+        ) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.calendarClient.calendarDays = { _, _ in [] }
+            $0.calendarClient.gridInfo = { _ in GridInfo(startCol: 0, endCol: 6, endRow: 5) }
+        }
+
+        await store.send(.goToPreviousYear) {
+            $0.displayedMonth = mar2025
+        }
+    }
+
+    @Test
     func togglePin_togglesState() async {
         let store = TestStore(
             initialState: CalendarFeature.State()

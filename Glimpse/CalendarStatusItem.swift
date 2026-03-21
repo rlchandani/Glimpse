@@ -1,4 +1,5 @@
 import AppKit
+import Carbon
 import GlimpseCore
 
 @MainActor
@@ -23,7 +24,19 @@ final class CalendarStatusItem {
 
         updateMenuBarDisplay()
         scheduleMidnightRefresh()
+        registerGlobalHotkey()
         AppLogger.statusItem.info("Status item configured")
+    }
+
+    private func registerGlobalHotkey() {
+        // Cmd+Shift+C to toggle calendar
+        GlobalHotkey.register(
+            keyCode: 8, // 'C' key
+            modifiers: UInt32(cmdKey | shiftKey),
+            handler: { [weak self] in
+                self?.statusItemClicked()
+            }
+        )
     }
 
     func updateMenuBarDisplay() {
@@ -65,7 +78,7 @@ final class CalendarStatusItem {
         }
     }
 
-    @objc private func statusItemClicked() {
+    @objc func statusItemClicked() {
         guard let panel else {
             showPanel()
             return

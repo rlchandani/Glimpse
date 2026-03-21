@@ -58,6 +58,12 @@ struct CalendarPopoverView: View {
             case 124:
                 store.send(.goToNextMonth)
                 return nil
+            case 125: // Down arrow
+                store.send(.goToNextYear)
+                return nil
+            case 126: // Up arrow
+                store.send(.goToPreviousYear)
+                return nil
             case 36, 76:
                 if !store.isShowingCurrentMonth {
                     store.send(.goToToday)
