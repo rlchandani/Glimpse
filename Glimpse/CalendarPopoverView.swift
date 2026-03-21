@@ -1,22 +1,16 @@
+import GlimpseCore
 import SwiftUI
 
 struct CalendarPopoverView: View {
+    @Bindable var store: StoreOf<CalendarFeature>
     weak var panel: CalendarPanel?
 
-    @State private var displayedMonth = Date()
-    @State private var showingPreferences = false
-    @State private var isPinned = false
     @State private var scrollAccumulator: CGFloat = 0
     @State private var scrollMonitor: Any?
     @State private var keyMonitor: Any?
-    private let preferences = CalendarPreferences.shared
     private let scrollThreshold: CGFloat = 5.0
     private let maxScrollContribution: CGFloat = 1.5
     private let caretHeight = CalendarPanel.caretHeight
-
-    init(panel: CalendarPanel? = nil) {
-        self.panel = panel
-    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -24,8 +18,12 @@ struct CalendarPopoverView: View {
                 .frame(height: caretHeight)
 
             VStack(spacing: 12) {
-                if showingPreferences {
-                    PreferencesView(preferences: preferences)
+                if store.showingPreferences {
+                    PreferencesView(
+                        store: Store(initialState: PreferencesFeature.State()) {
+                            PreferencesFeature()
+                        }
+                    )
                 }
                 headerView
                 calendarSection
@@ -39,62 +37,76 @@ struct CalendarPopoverView: View {
         }
         .frame(width: 300)
         .onAppear {
-            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                switch event.keyCode {
-                case 123:
-                    goToPreviousMonth()
-                    return nil
-                case 124:
-                    goToNextMonth()
-                    return nil
-                case 36, 76:
-                    if !isShowingCurrentMonth {
-                        goToToday()
-                    }
-                    return nil
-                case 53:
-                    if showingPreferences {
-                        withAnimation(AppDesign.Animation.standard) {
-                            showingPreferences = false
-                        }
-                    } else {
-                        panel?.isPinned = false
-                        panel?.orderOut(nil)
-                    }
-                    return nil
-                default:
-                    return event
-                }
-            }
+            store.send(.onAppear)
+            setupKeyMonitor()
+            setupScrollMonitor()
+        }
+        .onDisappear {
+            removeMonitors()
+            store.send(.onDisappear)
+        }
+    }
 
-            scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
-                let delta = event.scrollingDeltaY
-                let clamped = max(-maxScrollContribution, min(maxScrollContribution, delta))
-                scrollAccumulator += clamped
+    // MARK: - Event Monitors
 
-                if scrollAccumulator > scrollThreshold {
-                    scrollAccumulator = 0
-                    goToPreviousMonth()
-                } else if scrollAccumulator < -scrollThreshold {
-                    scrollAccumulator = 0
-                    goToNextMonth()
+    private func setupKeyMonitor() {
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            switch event.keyCode {
+            case 123:
+                store.send(.goToPreviousMonth)
+                return nil
+            case 124:
+                store.send(.goToNextMonth)
+                return nil
+            case 36, 76:
+                if !store.isShowingCurrentMonth {
+                    store.send(.goToToday)
                 }
+                return nil
+            case 53:
+                if store.showingPreferences {
+                    withAnimation(AppDesign.Animation.standard) {
+                        _ = store.send(.togglePreferences)
+                    }
+                } else {
+                    store.send(.closePanel)
+                    panel?.isPinned = false
+                    panel?.orderOut(nil)
+                }
+                return nil
+            default:
                 return event
             }
         }
-        .onDisappear {
-            if let monitor = keyMonitor {
-                NSEvent.removeMonitor(monitor)
-                keyMonitor = nil
+    }
+
+    private func setupScrollMonitor() {
+        scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
+            let delta = event.scrollingDeltaY
+            let clamped = max(-maxScrollContribution, min(maxScrollContribution, delta))
+            scrollAccumulator += clamped
+
+            if scrollAccumulator > scrollThreshold {
+                scrollAccumulator = 0
+                store.send(.goToPreviousMonth)
+            } else if scrollAccumulator < -scrollThreshold {
+                scrollAccumulator = 0
+                store.send(.goToNextMonth)
             }
-            if let monitor = scrollMonitor {
-                NSEvent.removeMonitor(monitor)
-                scrollMonitor = nil
-            }
-            scrollAccumulator = 0
-            showingPreferences = false
-            displayedMonth = Date()
+            return event
         }
+    }
+
+    private func removeMonitors() {
+        if let monitor = keyMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyMonitor = nil
+        }
+        if let monitor = scrollMonitor {
+            NSEvent.removeMonitor(monitor)
+            scrollMonitor = nil
+        }
+        scrollAccumulator = 0
     }
 
     // MARK: - Caret
@@ -123,14 +135,14 @@ struct CalendarPopoverView: View {
 
     private var headerView: some View {
         HStack {
-            Text(monthYearString)
+            Text(store.monthYearString)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
             Spacer()
 
             HStack(spacing: AppDesign.Spacing.sm + 2) {
-                Button(action: goToPreviousMonth) {
+                Button { store.send(.goToPreviousMonth) } label: {
                     Image(systemName: "chevron.left")
                         .font(.body.weight(.semibold))
                 }
@@ -138,21 +150,21 @@ struct CalendarPopoverView: View {
                 .focusable(false)
                 .accessibilityLabel("Previous month")
 
-                Button(action: goToToday) {
+                Button { store.send(.goToToday) } label: {
                     Image(systemName: "circle.fill")
                         .font(.system(size: 8))
                         .foregroundStyle(
-                            isShowingCurrentMonth
+                            store.isShowingCurrentMonth
                                 ? Color.secondary.opacity(0.3)
                                 : Color.accentColor
                         )
                 }
                 .buttonStyle(.plain)
                 .focusable(false)
-                .disabled(isShowingCurrentMonth)
+                .disabled(store.isShowingCurrentMonth)
                 .accessibilityLabel("Go to today")
 
-                Button(action: goToNextMonth) {
+                Button { store.send(.goToNextMonth) } label: {
                     Image(systemName: "chevron.right")
                         .font(.body.weight(.semibold))
                 }
@@ -166,10 +178,10 @@ struct CalendarPopoverView: View {
     // MARK: - Calendar Section
 
     private var calendarSection: some View {
-        let cal = preferences.calendar
-        let days = calendarDays(using: cal)
-        let orderedDays = preferences.orderedWeekdaySymbols()
-        let gridInfo = monthGridInfo(days: days)
+        let cal = store.calendar
+        let days = store.days
+        let orderedDays = orderedWeekdaySymbols(startOfWeekday: store.startOfWeekday)
+        let gridInfo = store.gridInfo
         let shortNames = Calendar.current.shortWeekdaySymbols
 
         return VStack(spacing: AppDesign.Spacing.xs) {
@@ -189,43 +201,44 @@ struct CalendarPopoverView: View {
                 }
             }
 
-            HStack(alignment: .top, spacing: 0) {
-                VStack(spacing: 0) {
-                    ForEach(0..<6, id: \.self) { row in
-                        let weekDate = days[row * 7].date
-                        Text("\(cal.component(.weekOfYear, from: weekDate))")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                            .frame(
-                                width: AppDesign.Grid.weekNumberWidth,
-                                height: AppDesign.Grid.cellHeight
-                            )
-                            .accessibilityLabel("Week \(cal.component(.weekOfYear, from: weekDate))")
+            if days.count == 42 {
+                HStack(alignment: .top, spacing: 0) {
+                    VStack(spacing: 0) {
+                        ForEach(0..<6, id: \.self) { row in
+                            let weekDate = days[row * 7].date
+                            Text("\(cal.component(.weekOfYear, from: weekDate))")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .frame(
+                                    width: AppDesign.Grid.weekNumberWidth,
+                                    height: AppDesign.Grid.cellHeight
+                                )
+                        }
                     }
-                }
 
-                VStack(spacing: 0) {
-                    ForEach(0..<6, id: \.self) { row in
-                        HStack(spacing: 0) {
-                            ForEach(0..<7, id: \.self) { col in
-                                let day = days[row * 7 + col]
-                                let weekday = orderedDays[col].index
-                                let isWorkday = preferences.isWorkday(weekday)
-                                dayCell(day, using: cal, isWorkdayColumn: isWorkday)
+                    VStack(spacing: 0) {
+                        ForEach(0..<6, id: \.self) { row in
+                            HStack(spacing: 0) {
+                                ForEach(0..<7, id: \.self) { col in
+                                    let day = days[row * 7 + col]
+                                    let weekday = orderedDays[col].index
+                                    let isWorkday = store.workdays.contains(weekday)
+                                    dayCell(day, using: cal, isWorkdayColumn: isWorkday)
+                                }
                             }
                         }
                     }
-                }
-                .overlay {
-                    MonthBorderShape(
-                        startCol: gridInfo.startCol,
-                        endCol: gridInfo.endCol,
-                        endRow: gridInfo.endRow
-                    )
-                    .stroke(
-                        Color.secondary.opacity(AppDesign.Grid.monthBorderOpacity),
-                        lineWidth: 1
-                    )
+                    .overlay {
+                        MonthBorderShape(
+                            startCol: gridInfo.startCol,
+                            endCol: gridInfo.endCol,
+                            endRow: gridInfo.endRow
+                        )
+                        .stroke(
+                            Color.secondary.opacity(AppDesign.Grid.monthBorderOpacity),
+                            lineWidth: 1
+                        )
+                    }
                 }
             }
         }
@@ -238,15 +251,19 @@ struct CalendarPopoverView: View {
                 )
         )
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Calendar grid for \(monthYearString)")
+        .accessibilityLabel("Calendar grid for \(store.monthYearString)")
     }
 
-    private func monthGridInfo(days: [CalendarDay]) -> (startCol: Int, endCol: Int, endRow: Int) {
-        CalendarGridHelper.monthGridInfo(days: days)
+    private func orderedWeekdaySymbols(startOfWeekday: Int) -> [(index: Int, symbol: String)] {
+        let symbols = Calendar.current.veryShortWeekdaySymbols
+        return (0..<7).map { offset in
+            let weekday = ((startOfWeekday - 1 + offset) % 7) + 1
+            return (index: weekday, symbol: symbols[weekday - 1])
+        }
     }
 
     private func dayCell(
-        _ day: CalendarDay,
+        _ day: GlimpseCore.CalendarDay,
         using cal: Calendar,
         isWorkdayColumn: Bool
     ) -> some View {
@@ -277,7 +294,7 @@ struct CalendarPopoverView: View {
     }
 
     private func dayAccessibilityLabel(
-        _ day: CalendarDay, dayNumber: Int, isToday: Bool
+        _ day: GlimpseCore.CalendarDay, dayNumber: Int, isToday: Bool
     ) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .long
@@ -287,7 +304,7 @@ struct CalendarPopoverView: View {
         return label
     }
 
-    private func foregroundColor(for day: CalendarDay, isToday: Bool) -> Color {
+    private func foregroundColor(for day: GlimpseCore.CalendarDay, isToday: Bool) -> Color {
         if isToday { return .white }
         if !day.isCurrentMonth { return .secondary.opacity(AppDesign.Grid.dimmedTextOpacity) }
         return .primary
@@ -302,17 +319,17 @@ struct CalendarPopoverView: View {
                 Spacer()
 
                 Button {
-                    isPinned.toggle()
-                    panel?.isPinned = isPinned
+                    store.send(.togglePin)
+                    panel?.isPinned = store.isPinned
                 } label: {
-                    Image(systemName: isPinned ? "pin.fill" : "pin")
+                    Image(systemName: store.isPinned ? "pin.fill" : "pin")
                         .font(.body)
-                        .foregroundStyle(isPinned ? Color.accentColor : .secondary)
-                        .rotationEffect(.degrees(isPinned ? 0 : 45))
+                        .foregroundStyle(store.isPinned ? Color.accentColor : .secondary)
+                        .rotationEffect(.degrees(store.isPinned ? 0 : 45))
                 }
                 .buttonStyle(.plain)
                 .focusable(false)
-                .accessibilityLabel(isPinned ? "Unpin window" : "Pin window")
+                .accessibilityLabel(store.isPinned ? "Unpin window" : "Pin window")
 
                 Button(action: openAppleCalendar) {
                     Image(systemName: "calendar")
@@ -325,16 +342,20 @@ struct CalendarPopoverView: View {
 
                 Button {
                     withAnimation(AppDesign.Animation.standard) {
-                        showingPreferences.toggle()
+                        _ = store.send(.togglePreferences)
                     }
                 } label: {
-                    Image(systemName: showingPreferences ? "gearshape.fill" : "gearshape")
+                    Image(systemName: store.showingPreferences ? "gearshape.fill" : "gearshape")
                         .font(.body)
-                        .foregroundStyle(showingPreferences ? Color.accentColor : .secondary)
+                        .foregroundStyle(
+                            store.showingPreferences ? Color.accentColor : .secondary
+                        )
                 }
                 .buttonStyle(.plain)
                 .focusable(false)
-                .accessibilityLabel(showingPreferences ? "Close preferences" : "Open preferences")
+                .accessibilityLabel(
+                    store.showingPreferences ? "Close preferences" : "Open preferences"
+                )
             }
         }
     }
@@ -348,40 +369,6 @@ struct CalendarPopoverView: View {
                 configuration: NSWorkspace.OpenConfiguration()
             )
         }
-    }
-
-    // MARK: - Navigation
-
-    private func goToPreviousMonth() {
-        displayedMonth = preferences.calendar.date(
-            byAdding: .month, value: -1, to: displayedMonth
-        ) ?? displayedMonth
-    }
-
-    private func goToNextMonth() {
-        displayedMonth = preferences.calendar.date(
-            byAdding: .month, value: 1, to: displayedMonth
-        ) ?? displayedMonth
-    }
-
-    private func goToToday() {
-        displayedMonth = Date()
-    }
-
-    private var isShowingCurrentMonth: Bool {
-        preferences.calendar.isDate(displayedMonth, equalTo: Date(), toGranularity: .month)
-    }
-
-    // MARK: - Data
-
-    private var monthYearString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: displayedMonth)
-    }
-
-    private func calendarDays(using cal: Calendar) -> [CalendarDay] {
-        CalendarGridHelper.calendarDays(for: displayedMonth, using: cal)
     }
 }
 
@@ -444,9 +431,4 @@ struct MonthBorderShape: Shape {
     private func midpoint(_ a: CGPoint, _ b: CGPoint) -> CGPoint {
         CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
     }
-}
-
-struct CalendarDay {
-    let date: Date
-    let isCurrentMonth: Bool
 }

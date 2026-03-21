@@ -1,7 +1,8 @@
+import GlimpseCore
 import SwiftUI
 
 struct PreferencesView: View {
-    @Bindable var preferences: CalendarPreferences
+    @Bindable var store: StoreOf<PreferencesFeature>
 
     private let allWeekdays = Array(1...7)
 
@@ -18,6 +19,7 @@ struct PreferencesView: View {
 
             Divider()
         }
+        .onAppear { store.send(.onAppear) }
     }
 
     // MARK: - Menu Bar Display
@@ -28,32 +30,29 @@ struct PreferencesView: View {
                 .font(.subheadline)
 
             HStack(spacing: 12) {
-                Toggle("Icon", isOn: $preferences.showIcon)
-                Toggle("Day", isOn: $preferences.showDayOfWeek)
-                Toggle("Month", isOn: $preferences.showMonth)
-                Toggle("Date", isOn: $preferences.showDate)
-                Toggle("Year", isOn: $preferences.showYear)
+                Toggle("Icon", isOn: $store.displayOptions.showIcon.sending(\.setShowIcon))
+                Toggle("Day", isOn: $store.displayOptions.showDayOfWeek.sending(\.setShowDayOfWeek))
+                Toggle("Month", isOn: $store.displayOptions.showMonth.sending(\.setShowMonth))
+                Toggle("Date", isOn: $store.displayOptions.showDate.sending(\.setShowDate))
+                Toggle("Year", isOn: $store.displayOptions.showYear.sending(\.setShowYear))
             }
             .font(.caption)
 
-            let preview = preferences.menuBarDateString()
-            let showIcon = preferences.showIcon || preview.isEmpty
+            let showIcon = store.displayOptions.showIcon
             HStack(spacing: 0) {
                 if showIcon {
                     Image(nsImage: DateIconRenderer.render())
                         .padding(.horizontal, AppDesign.StatusItem.padding)
                 }
-                if showIcon && !preview.isEmpty {
+                if showIcon {
                     Divider()
                         .frame(height: AppDesign.Spacing.md)
                 }
-                if !preview.isEmpty {
-                    Text(preview)
-                        .font(.system(
-                            size: AppDesign.StatusItem.fontSize, weight: .medium
-                        ))
-                        .padding(.horizontal, AppDesign.StatusItem.padding)
-                }
+                Text("Preview")
+                    .font(.system(
+                        size: AppDesign.StatusItem.fontSize, weight: .medium
+                    ))
+                    .padding(.horizontal, AppDesign.StatusItem.padding)
             }
             .padding(.vertical, 3)
             .overlay(
@@ -63,8 +62,6 @@ struct PreferencesView: View {
                         lineWidth: 1
                     )
             )
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Preview: \(showIcon ? "icon" : "") \(preview)")
         }
     }
 
@@ -75,9 +72,9 @@ struct PreferencesView: View {
             Text("Week starts on:")
                 .font(.subheadline)
             Spacer()
-            Picker("Week start day", selection: $preferences.startOfWeekday) {
+            Picker("Week start day", selection: $store.startOfWeekday.sending(\.setStartOfWeekday)) {
                 ForEach(allWeekdays, id: \.self) { weekday in
-                    Text(preferences.weekdayName(for: weekday))
+                    Text(Calendar.current.weekdaySymbols[weekday - 1])
                         .tag(weekday)
                 }
             }
@@ -105,12 +102,12 @@ struct PreferencesView: View {
     }
 
     private func workdayToggle(_ weekday: Int) -> some View {
-        let isSelected = preferences.isWorkday(weekday)
+        let isSelected = store.workdays.contains(weekday)
         let symbol = Calendar.current.veryShortWeekdaySymbols[weekday - 1]
         let fullName = Calendar.current.weekdaySymbols[weekday - 1]
 
         return Button {
-            preferences.toggleWorkday(weekday)
+            store.send(.toggleWorkday(weekday))
         } label: {
             Text(symbol)
                 .font(.caption.weight(isSelected ? .bold : .regular))
@@ -132,7 +129,18 @@ struct PreferencesView: View {
     // MARK: - Launch at Login
 
     private var launchAtLoginToggle: some View {
-        Toggle("Launch at login", isOn: $preferences.launchAtLogin)
+        VStack(alignment: .leading) {
+            Toggle(
+                "Launch at login",
+                isOn: $store.launchAtLogin.sending(\.setLaunchAtLogin)
+            )
             .font(.subheadline)
+
+            if let error = store.launchAtLoginError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        }
     }
 }

@@ -1,4 +1,5 @@
 import AppKit
+import GlimpseCore
 import SwiftUI
 
 @MainActor

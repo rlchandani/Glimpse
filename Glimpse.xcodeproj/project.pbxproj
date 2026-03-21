@@ -11,16 +11,13 @@
 		AA00000000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000011 /* Assets.xcassets */; };
 		AA00000000000000000003 /* CalendarPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000015 /* CalendarPopoverView.swift */; };
 		AA00000000000000000004 /* DateIconRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000016 /* DateIconRenderer.swift */; };
-		AA00000000000000000005 /* CalendarPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000017 /* CalendarPreferences.swift */; };
 		AA00000000000000000006 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000018 /* PreferencesView.swift */; };
 		AA00000000000000000008 /* CalendarPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001A /* CalendarPanel.swift */; };
 		AA00000000000000000009 /* CalendarStatusItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001B /* CalendarStatusItem.swift */; };
 		AA0000000000000000000A /* StatusItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001C /* StatusItemView.swift */; };
-		AA0000000000000000000B /* CalendarGridHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001D /* CalendarGridHelper.swift */; };
 		AA0000000000000000000C /* AppDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001E /* AppDesign.swift */; };
 		AA0000000000000000000D /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001F /* AppLogger.swift */; };
-		BB00000000000000000020 /* CalendarPreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000010 /* CalendarPreferencesTests.swift */; };
-		BB00000000000000000021 /* CalendarGridHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000011 /* CalendarGridHelperTests.swift */; };
+		CC00000000000000000001 /* GlimpseCore in Frameworks */ = {isa = PBXBuildFile; productRef = CC00000000000000000002 /* GlimpseCore */; };
 		BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000012 /* MonthBorderShapeTests.swift */; };
 		BB00000000000000000023 /* DateIconRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000013 /* DateIconRendererTests.swift */; };
 		BB00000000000000000024 /* AppDesignTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000014 /* AppDesignTests.swift */; };
@@ -44,17 +41,13 @@
 		AA00000000000000000014 /* Glimpse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Glimpse.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA00000000000000000015 /* CalendarPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPopoverView.swift; sourceTree = "<group>"; };
 		AA00000000000000000016 /* DateIconRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateIconRenderer.swift; sourceTree = "<group>"; };
-		AA00000000000000000017 /* CalendarPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPreferences.swift; sourceTree = "<group>"; };
 		AA00000000000000000018 /* PreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
 		AA0000000000000000001A /* CalendarPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPanel.swift; sourceTree = "<group>"; };
 		AA0000000000000000001B /* CalendarStatusItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarStatusItem.swift; sourceTree = "<group>"; };
 		AA0000000000000000001C /* StatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemView.swift; sourceTree = "<group>"; };
-		AA0000000000000000001D /* CalendarGridHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarGridHelper.swift; sourceTree = "<group>"; };
 		AA0000000000000000001E /* AppDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDesign.swift; sourceTree = "<group>"; };
 		AA0000000000000000001F /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
 		BB00000000000000000007 /* GlimpseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GlimpseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		BB00000000000000000010 /* CalendarPreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPreferencesTests.swift; sourceTree = "<group>"; };
-		BB00000000000000000011 /* CalendarGridHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarGridHelperTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000012 /* MonthBorderShapeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBorderShapeTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000013 /* DateIconRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateIconRendererTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000014 /* AppDesignTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDesignTests.swift; sourceTree = "<group>"; };
@@ -65,6 +58,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CC00000000000000000001 /* GlimpseCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,12 +87,10 @@
 				AA00000000000000000010 /* GlimpseApp.swift */,
 				AA00000000000000000015 /* CalendarPopoverView.swift */,
 				AA00000000000000000016 /* DateIconRenderer.swift */,
-				AA00000000000000000017 /* CalendarPreferences.swift */,
 				AA00000000000000000018 /* PreferencesView.swift */,
 				AA0000000000000000001A /* CalendarPanel.swift */,
 				AA0000000000000000001B /* CalendarStatusItem.swift */,
 				AA0000000000000000001C /* StatusItemView.swift */,
-				AA0000000000000000001D /* CalendarGridHelper.swift */,
 				AA0000000000000000001E /* AppDesign.swift */,
 				AA0000000000000000001F /* AppLogger.swift */,
 				AA00000000000000000011 /* Assets.xcassets */,
@@ -120,8 +112,6 @@
 		BB00000000000000000008 /* GlimpseTests */ = {
 			isa = PBXGroup;
 			children = (
-				BB00000000000000000010 /* CalendarPreferencesTests.swift */,
-				BB00000000000000000011 /* CalendarGridHelperTests.swift */,
 				BB00000000000000000012 /* MonthBorderShapeTests.swift */,
 				BB00000000000000000013 /* DateIconRendererTests.swift */,
 				BB00000000000000000014 /* AppDesignTests.swift */,
@@ -146,6 +136,9 @@
 			dependencies = (
 			);
 			name = Glimpse;
+			packageProductDependencies = (
+				CC00000000000000000002 /* GlimpseCore */,
+			);
 			productName = Glimpse;
 			productReference = AA00000000000000000014 /* Glimpse.app */;
 			productType = "com.apple.product-type.application";
@@ -189,6 +182,9 @@
 			productRefGroup = AA00000000000000000032 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
+			packageReferences = (
+				CC00000000000000000003 /* XCLocalSwiftPackageReference "GlimpseCore" */,
+			);
 			targets = (
 				AA00000000000000000040 /* Glimpse */,
 				BB00000000000000000001 /* GlimpseTests */,
@@ -215,12 +211,10 @@
 				AA00000000000000000001 /* GlimpseApp.swift in Sources */,
 				AA00000000000000000003 /* CalendarPopoverView.swift in Sources */,
 				AA00000000000000000004 /* DateIconRenderer.swift in Sources */,
-				AA00000000000000000005 /* CalendarPreferences.swift in Sources */,
 				AA00000000000000000006 /* PreferencesView.swift in Sources */,
 				AA00000000000000000008 /* CalendarPanel.swift in Sources */,
 				AA00000000000000000009 /* CalendarStatusItem.swift in Sources */,
 				AA0000000000000000000A /* StatusItemView.swift in Sources */,
-				AA0000000000000000000B /* CalendarGridHelper.swift in Sources */,
 				AA0000000000000000000C /* AppDesign.swift in Sources */,
 				AA0000000000000000000D /* AppLogger.swift in Sources */,
 			);
@@ -230,8 +224,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BB00000000000000000020 /* CalendarPreferencesTests.swift in Sources */,
-				BB00000000000000000021 /* CalendarGridHelperTests.swift in Sources */,
 				BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */,
 				BB00000000000000000023 /* DateIconRendererTests.swift in Sources */,
 				BB00000000000000000024 /* AppDesignTests.swift in Sources */,
@@ -415,6 +407,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		CC00000000000000000003 /* XCLocalSwiftPackageReference "GlimpseCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = GlimpseCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CC00000000000000000002 /* GlimpseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GlimpseCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 	};
 	rootObject = AA00000000000000000050 /* Project object */;

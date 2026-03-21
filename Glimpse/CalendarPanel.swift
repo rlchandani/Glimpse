@@ -1,4 +1,5 @@
 import AppKit
+import GlimpseCore
 import SwiftUI
 
 @MainActor
@@ -28,7 +29,10 @@ final class CalendarPanel: NSPanel {
         collectionBehavior = [.moveToActiveSpace]
         animationBehavior = .utilityWindow
 
-        let popoverView = CalendarPopoverView(panel: self)
+        let store = Store(initialState: CalendarFeature.State()) {
+            CalendarFeature()
+        }
+        let popoverView = CalendarPopoverView(store: store, panel: self)
         let hostingView = NSHostingView(rootView: popoverView)
         hostingView.frame = contentRect
         contentView = hostingView

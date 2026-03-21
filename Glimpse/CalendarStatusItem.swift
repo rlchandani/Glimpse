@@ -1,4 +1,5 @@
 import AppKit
+import GlimpseCore
 
 @MainActor
 final class CalendarStatusItem {
@@ -6,6 +7,8 @@ final class CalendarStatusItem {
     private var statusItemView: StatusItemView?
     private var panel: CalendarPanel?
     private var midnightTimer: Timer?
+    private let preferencesClient = PreferencesClient.liveValue
+    private let calendarClient = CalendarClient.liveValue
 
     func setup() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -18,12 +21,6 @@ final class CalendarStatusItem {
         statusItem?.button?.target = self
         statusItem?.button?.action = #selector(statusItemClicked)
 
-        CalendarPreferences.shared.onMenuBarDisplayChanged = { [weak self] in
-            Task { @MainActor in
-                self?.updateMenuBarDisplay()
-            }
-        }
-
         updateMenuBarDisplay()
         scheduleMidnightRefresh()
         AppLogger.statusItem.info("Status item configured")
@@ -34,10 +31,10 @@ final class CalendarStatusItem {
               let view = statusItemView
         else { return }
 
-        let prefs = CalendarPreferences.shared
+        let options = preferencesClient.loadDisplayOptions()
         let icon = DateIconRenderer.render()
-        let dateString = prefs.menuBarDateString()
-        let showIcon = prefs.showIcon || dateString.isEmpty
+        let dateString = calendarClient.menuBarDateString(Date(), options)
+        let showIcon = options.showIcon || dateString.isEmpty
 
         view.update(icon: icon, text: dateString, showIcon: showIcon)
 
