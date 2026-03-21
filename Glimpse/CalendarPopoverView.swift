@@ -27,6 +27,7 @@ struct CalendarPopoverView: View {
                 }
                 headerView
                 calendarSection
+                eventsSection
                 footerView
             }
             .padding()
@@ -314,6 +315,72 @@ struct CalendarPopoverView: View {
         if isToday { return .white }
         if !day.isCurrentMonth { return .secondary.opacity(AppDesign.Grid.dimmedTextOpacity) }
         return .primary
+    }
+
+    // MARK: - Events Section
+
+    @ViewBuilder
+    private var eventsSection: some View {
+        if !store.calendarAccessGranted {
+            Button {
+                store.send(.requestCalendarAccess)
+            } label: {
+                HStack {
+                    Image(systemName: "calendar.badge.plus")
+                        .font(.subheadline)
+                    Text("Show today's events")
+                        .font(.subheadline)
+                }
+                .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Grant calendar access to show events")
+        } else if store.todayEvents.isEmpty {
+            HStack {
+                Image(systemName: "calendar")
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+                Text("No events today")
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: AppDesign.Spacing.xs) {
+                Text("Today")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                ForEach(store.todayEvents.prefix(5)) { event in
+                    HStack(spacing: AppDesign.Spacing.sm) {
+                        RoundedRectangle(cornerRadius: 1.5)
+                            .fill(Color.accentColor)
+                            .frame(width: 3, height: 28)
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(event.title)
+                                .font(.subheadline)
+                                .lineLimit(1)
+                            Text(event.timeString)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(event.title), \(event.timeString)")
+                }
+
+                if store.todayEvents.count > 5 {
+                    Text("+\(store.todayEvents.count - 5) more")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .padding(AppDesign.Spacing.sm)
+            .overlay(
+                RoundedRectangle(cornerRadius: AppDesign.CornerRadius.md)
+                    .strokeBorder(Color.secondary.opacity(AppDesign.Grid.borderOpacity), lineWidth: 1)
+            )
+        }
     }
 
     // MARK: - Footer

@@ -19,6 +19,7 @@
 		AA0000000000000000000D /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001F /* AppLogger.swift */; };
 		DD00000000000000000001 /* GlobalHotkey.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000010 /* GlobalHotkey.swift */; };
 		DD00000000000000000002 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000011 /* AppIntents.swift */; };
+		DD00000000000000000003 /* AIDateHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000012 /* AIDateHelper.swift */; };
 		CC00000000000000000001 /* GlimpseCore in Frameworks */ = {isa = PBXBuildFile; productRef = CC00000000000000000002 /* GlimpseCore */; };
 		BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000012 /* MonthBorderShapeTests.swift */; };
 		BB00000000000000000023 /* DateIconRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000013 /* DateIconRendererTests.swift */; };
@@ -51,6 +52,7 @@
 		AA0000000000000000001F /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
 		DD00000000000000000010 /* GlobalHotkey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkey.swift; sourceTree = "<group>"; };
 		DD00000000000000000011 /* AppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntents.swift; sourceTree = "<group>"; };
+		DD00000000000000000012 /* AIDateHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIDateHelper.swift; sourceTree = "<group>"; };
 		BB00000000000000000007 /* GlimpseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GlimpseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB00000000000000000012 /* MonthBorderShapeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBorderShapeTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000013 /* DateIconRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateIconRendererTests.swift; sourceTree = "<group>"; };
@@ -99,6 +101,7 @@
 				AA0000000000000000001F /* AppLogger.swift */,
 				DD00000000000000000010 /* GlobalHotkey.swift */,
 				DD00000000000000000011 /* AppIntents.swift */,
+				DD00000000000000000012 /* AIDateHelper.swift */,
 				AA00000000000000000011 /* Assets.xcassets */,
 				AA00000000000000000012 /* Info.plist */,
 				AA00000000000000000013 /* Glimpse.entitlements */,
@@ -225,6 +228,7 @@
 				AA0000000000000000000D /* AppLogger.swift in Sources */,
 				DD00000000000000000001 /* GlobalHotkey.swift in Sources */,
 				DD00000000000000000002 /* AppIntents.swift in Sources */,
+				DD00000000000000000003 /* AIDateHelper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

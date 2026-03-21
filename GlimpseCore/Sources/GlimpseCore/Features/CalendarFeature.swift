@@ -13,6 +13,8 @@ public struct CalendarFeature: Sendable {
         public var workdays: Set<Int> = [2, 3, 4, 5, 6]
         public var isPinned: Bool = false
         public var showingPreferences: Bool = false
+        public var todayEvents: [CalendarEvent] = []
+        public var calendarAccessGranted: Bool = false
 
         public var calendar: Calendar {
             var cal = Calendar.current
@@ -46,10 +48,14 @@ public struct CalendarFeature: Sendable {
         case togglePreferences
         case closePanel
         case onDisappear
+        case requestCalendarAccess
+        case calendarAccessResult(Bool)
+        case eventsLoaded([CalendarEvent])
     }
 
     @Dependency(\.calendarClient) var calendarClient
     @Dependency(\.preferencesClient) var preferencesClient
+    @Dependency(\.eventKitClient) var eventKitClient
 
     public init() {}
 
@@ -60,6 +66,14 @@ public struct CalendarFeature: Sendable {
                 state.startOfWeekday = preferencesClient.loadStartOfWeekday()
                 state.workdays = preferencesClient.loadWorkdays()
                 recomputeDays(&state)
+                let status = eventKitClient.authorizationStatus()
+                if status == .fullAccess {
+                    state.calendarAccessGranted = true
+                    return .run { send in
+                        let events = await eventKitClient.fetchTodayEvents()
+                        await send(.eventsLoaded(events))
+                    }
+                }
                 return .none
 
             case .goToPreviousMonth:
@@ -113,6 +127,26 @@ public struct CalendarFeature: Sendable {
 
             case .closePanel:
                 state.isPinned = false
+                return .none
+
+            case .requestCalendarAccess:
+                return .run { send in
+                    let granted = await eventKitClient.requestAccess()
+                    await send(.calendarAccessResult(granted))
+                }
+
+            case let .calendarAccessResult(granted):
+                state.calendarAccessGranted = granted
+                if granted {
+                    return .run { send in
+                        let events = await eventKitClient.fetchTodayEvents()
+                        await send(.eventsLoaded(events))
+                    }
+                }
+                return .none
+
+            case let .eventsLoaded(events):
+                state.todayEvents = events
                 return .none
 
             case .onDisappear:

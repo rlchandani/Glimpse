@@ -22,6 +22,7 @@ struct CalendarFeatureTests {
             $0.preferencesClient.loadWorkdays = { [2, 3, 4, 5] }
             $0.calendarClient.calendarDays = { _, _ in testDays }
             $0.calendarClient.gridInfo = { _ in GridInfo(startCol: 0, endCol: 2, endRow: 4) }
+            $0.eventKitClient.authorizationStatus = { .notDetermined }
         }
 
         await store.send(.onAppear) {
