@@ -29,14 +29,19 @@ final class CalendarStatusItem {
     }
 
     private func registerGlobalHotkey() {
-        // Cmd+Shift+C to toggle calendar
-        GlobalHotkey.register(
-            keyCode: 8, // 'C' key
-            modifiers: UInt32(cmdKey | shiftKey),
-            handler: { [weak self] in
-                self?.statusItemClicked()
-            }
-        )
+        let enabled = UserDefaults.standard.object(forKey: "hotkeyEnabled") != nil
+            ? UserDefaults.standard.bool(forKey: "hotkeyEnabled")
+            : true
+
+        guard enabled else {
+            AppLogger.statusItem.info("Global hotkey disabled by user")
+            return
+        }
+
+        let combo = HotkeyCombo.load()
+        GlobalHotkey.register(combo: combo) { [weak self] in
+            self?.statusItemClicked()
+        }
     }
 
     func updateMenuBarDisplay() {

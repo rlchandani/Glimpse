@@ -1,3 +1,5 @@
+import AppKit
+import Carbon
 import GlimpseCore
 import SwiftUI
 
@@ -15,6 +17,7 @@ struct PreferencesView: View {
             menuBarDisplaySection
             startOfWeekPicker
             workdaySelector
+            hotkeySection
             launchAtLoginToggle
 
             Divider()
@@ -126,6 +129,107 @@ struct PreferencesView: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
+    // MARK: - Hotkey
+
+    @State private var hotkeyEnabled: Bool = {
+        UserDefaults.standard.object(forKey: "hotkeyEnabled") != nil
+            ? UserDefaults.standard.bool(forKey: "hotkeyEnabled")
+            : true
+    }()
+    @State private var isRecordingHotkey = false
+    @State private var hotkeyMonitor: Any?
+
+    private var hotkeySection: some View {
+        VStack(alignment: .leading, spacing: AppDesign.Spacing.sm) {
+            HStack {
+                Toggle(isOn: $hotkeyEnabled) {
+                    Text("Global shortcut")
+                        .font(.subheadline)
+                }
+                .onChange(of: hotkeyEnabled) { _, enabled in
+                    if enabled {
+                        let combo = HotkeyCombo.load()
+                        GlobalHotkey.register(combo: combo) {
+                            if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+                                appDelegate.calendarStatusItem.statusItemClicked()
+                            }
+                        }
+                    } else {
+                        GlobalHotkey.unregister()
+                    }
+                    UserDefaults.standard.set(enabled, forKey: "hotkeyEnabled")
+                }
+
+                Spacer()
+
+                Button {
+                    if isRecordingHotkey {
+                        stopRecording()
+                    } else {
+                        startRecording()
+                    }
+                } label: {
+                    Text(isRecordingHotkey ? "Press shortcut..." : GlobalHotkey.currentCombo.displayString)
+                        .font(.system(.body, design: .monospaced).weight(.medium))
+                        .foregroundStyle(isRecordingHotkey ? Color.accentColor : (hotkeyEnabled ? Color.primary : Color.secondary.opacity(0.4)))
+                        .padding(.horizontal, AppDesign.Spacing.md)
+                        .padding(.vertical, AppDesign.Spacing.xs)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppDesign.CornerRadius.sm + 2)
+                                .fill(isRecordingHotkey
+                                    ? Color.accentColor.opacity(0.1)
+                                    : Color.secondary.opacity(hotkeyEnabled ? 0.12 : 0.05)
+                                )
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AppDesign.CornerRadius.sm + 2)
+                                .strokeBorder(
+                                    isRecordingHotkey ? Color.accentColor : Color.clear,
+                                    lineWidth: 1
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(!hotkeyEnabled)
+            }
+        }
+        .onDisappear { stopRecording() }
+    }
+
+    private func startRecording() {
+        isRecordingHotkey = true
+        hotkeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
+            guard !modifiers.isEmpty else { return event }
+
+            var carbonMods: UInt32 = 0
+            if modifiers.contains(.command) { carbonMods |= UInt32(cmdKey) }
+            if modifiers.contains(.shift) { carbonMods |= UInt32(shiftKey) }
+            if modifiers.contains(.option) { carbonMods |= UInt32(optionKey) }
+            if modifiers.contains(.control) { carbonMods |= UInt32(controlKey) }
+
+            let combo = HotkeyCombo(keyCode: UInt32(event.keyCode), modifiers: carbonMods)
+            combo.save()
+
+            GlobalHotkey.register(combo: combo) {
+                if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+                    appDelegate.calendarStatusItem.statusItemClicked()
+                }
+            }
+
+            stopRecording()
+            return nil
+        }
+    }
+
+    private func stopRecording() {
+        isRecordingHotkey = false
+        if let monitor = hotkeyMonitor {
+            NSEvent.removeMonitor(monitor)
+            hotkeyMonitor = nil
+        }
+    }
+
     // MARK: - Launch at Login
 
     private var launchAtLoginToggle: some View {
@@ -143,4 +247,5 @@ struct PreferencesView: View {
             }
         }
     }
+
 }

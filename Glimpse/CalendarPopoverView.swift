@@ -322,6 +322,17 @@ struct CalendarPopoverView: View {
         VStack(spacing: AppDesign.Spacing.sm) {
             Divider()
             HStack {
+                Button {
+                    NSApplication.shared.terminate(nil)
+                } label: {
+                    Image(systemName: "power")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .focusable(false)
+                .accessibilityLabel("Quit Glimpse")
+
                 Spacer()
 
                 Button {
