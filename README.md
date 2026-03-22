@@ -1,70 +1,44 @@
 # Glimpse
 
+[![Release](https://github.com/rlchandani/Glimpse/actions/workflows/release.yml/badge.svg)](https://github.com/rlchandani/Glimpse/actions/workflows/release.yml)
+[![Download](https://img.shields.io/github/v/release/rlchandani/Glimpse?label=Download&sort=semver)](https://github.com/rlchandani/Glimpse/releases/latest)
+[![License](https://img.shields.io/github/license/rlchandani/Glimpse)](https://github.com/rlchandani/Glimpse/blob/main/LICENSE)
+[![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-blue)]()
+[![Swift](https://img.shields.io/badge/Swift-6.0-orange)]()
+
 A lightweight macOS menu bar calendar app. Click the date icon to see the current month at a glance.
 
 ## Features
 
-### Calendar
-- **Monthly calendar popover** — click the menu bar icon to see a full month view
-- **Contoured month border** — visual outline wraps only the current month's days
-- **Week numbers** — ISO week numbers displayed alongside the calendar grid
-- **Weekend labels** — Saturday and Sunday headers highlighted
-- **Workday highlighting** — subtle column tinting for configured workdays
-- **Date selection** — click any day to select it; shows full date info and week number below the grid
-- **Outer border** — rounded border wrapping the entire grid including headers and week numbers
-
-### Navigation
-- **Month navigation** — left/right arrow keys or header chevrons
-- **Year navigation** — up/down arrow keys
-- **Today button** — center dot in header (active when navigated away)
-- **Scroll wheel** — scroll to change months with dampened sensitivity
-- **AI date search** — press ⌘G or click "Go to date..." to type natural language queries like "next Friday", "Christmas", or "Jan 2028" (macOS 26+, powered by on-device Foundation Models)
-
-### Menu Bar
-- **Customizable display** — toggle icon, day of week, month, date, and year independently
-- **Live preview** — see how your menu bar will look as you toggle options
-- **Bordered status item** — pill-shaped border with separator between icon and text
-- **Date icon** — shows today's date number with a red accent underline
-
-### System Integration
-- **Global keyboard shortcut** — configurable hotkey (default ⌘⇧C) to toggle the calendar from anywhere
-- **Click-to-record** — click the shortcut badge in preferences to set a new key combo
-- **EventKit** — shows today's calendar events in the popover (requires calendar access)
-- **AppIntents / Shortcuts** — "Show Glimpse Calendar" available in Shortcuts.app and Siri
+- **Menu bar popover** with month grid, week numbers, and contoured month border
+- **Date selection** — click any day to see full date info and week number
+- **AI date search** — press ⌘G and type "next Friday" or "Christmas" (macOS 26+, on-device)
+- **Today's events** — EventKit integration shows calendar events in the popover
+- **Global hotkey** — configurable shortcut (default ⌘⇧C) to toggle the calendar from anywhere
+- **Customizable menu bar** — toggle icon, day, month, date, year with live preview
+- **Workday highlighting** — configure which days are workdays
+- **Pin window** — keep the calendar visible while working
+- **Shortcuts.app** — "Show Glimpse Calendar" available via Siri and Shortcuts
 - **Launch at login** — via macOS SMAppService
-- **Pin window** — keep the calendar visible while working in other apps
-- **Multi-screen** — repositions to the correct screen when clicking the status item
-- **Quit** — power icon in the footer
-
-### Preferences
-Access via the gear icon in the calendar footer:
-- Menu bar display toggles (icon, day, month, date, year)
-- Week starts on (any day)
-- Workday selection (click day letters to toggle)
-- Global shortcut (enable/disable, click to record new combo)
-- Launch at login
 
 ## Architecture
 
-Built with [The Composable Architecture (TCA)](https://github.com/pointfreeco/swift-composable-architecture).
+Built with [The Composable Architecture](https://github.com/pointfreeco/swift-composable-architecture) (TCA) and Swift 6 strict concurrency.
 
-| Layer | Technology |
-|---|---|
-| State management | TCA reducers (`CalendarFeature`, `PreferencesFeature`, `MenuBarFeature`) |
-| Dependencies | `@Dependency` clients (`PreferencesClient`, `CalendarClient`, `EventKitClient`, `LaunchAtLoginClient`) |
-| UI | SwiftUI views driven by `StoreOf<Feature>` |
-| Window management | AppKit `NSPanel` (non-activating, floating) |
-| Menu bar | AppKit `NSStatusItem` with custom `StatusItemView` |
-| AI | Apple FoundationModels (`LanguageModelSession`, macOS 26+) |
-| Concurrency | Swift 6, `SWIFT_STRICT_CONCURRENCY = complete` |
-| Design | `AppDesign` tokens for spacing, corner radius, colors, animation |
-| Logging | `os.Logger` via `AppLogger` |
+- `CalendarFeature` → month navigation, date selection, events, AI
+- `PreferencesFeature` → all preference state with delegate actions
+- `MenuBarFeature` → display options, date string formatting
+- `@Dependency` clients: `PreferencesClient`, `CalendarClient`, `EventKitClient`, `LaunchAtLoginClient`
+- `@Dependency(\.date)` for deterministic reducer testing
+- `AppDesign` tokens for spacing, corner radius, colors, animation
+- `os.Logger` via `AppLogger` for diagnostics
 
 ## Requirements
 
 - macOS 14.0 (Sonoma) or later
 - macOS 26.0 (Tahoe) for AI date search
-- Xcode 16.0 or later
+- Xcode 16+
+- Swift 6.0
 
 ## Build
 
@@ -72,63 +46,58 @@ Built with [The Composable Architecture (TCA)](https://github.com/pointfreeco/sw
 xcodebuild -project Glimpse.xcodeproj -scheme Glimpse -configuration Release -skipMacroValidation build
 ```
 
+> **Note:** `-skipMacroValidation` is required for TCA macro plugins. When building in Xcode GUI for the first time, click "Trust & Enable" when prompted for macro plugins.
+
+The built app is at:
+```
+~/Library/Developer/Xcode/DerivedData/Glimpse-*/Build/Products/Release/Glimpse.app
+```
+
 ## Test
 
 ```bash
-# App tests
+# App tests (18 tests)
 xcodebuild -project Glimpse.xcodeproj -scheme Glimpse -skipMacroValidation test
 
-# GlimpseCore tests
+# GlimpseCore tests (29 TCA TestStore tests)
 cd GlimpseCore && swift test
 ```
 
-40 tests total (18 app + 22 TCA reducer tests), all using Swift Testing framework.
+47 tests total. All use Swift Testing (`@Test`, `#expect`) — no XCTest.
 
 ## Project Structure
 
 ```
 Glimpse/                             # App target
-├── GlimpseApp.swift                 # @main entry point, AppDelegate
-├── CalendarPanel.swift              # NSPanel with pin, text input activation
-├── CalendarStatusItem.swift         # NSStatusItem, panel positioning, midnight refresh
+├── GlimpseApp.swift                 # @main entry, AppDelegate
+├── CalendarPanel.swift              # NSPanel (non-activating, pin, text input)
+├── CalendarStatusItem.swift         # NSStatusItem, positioning, midnight refresh
 ├── StatusItemView.swift             # Bordered menu bar view (icon | text)
 ├── CalendarPopoverView.swift        # SwiftUI calendar, date selection, AI field
-├── PreferencesView.swift            # Preferences panel with key recorder
-├── DateIconRenderer.swift           # Renders date number as menu bar icon
-├── GlobalHotkey.swift               # Carbon EventHotKey with configurable combo
+├── PreferencesView.swift            # Preferences with key recorder
+├── MonthBorderShape.swift           # Contoured month border (SwiftUI Shape)
+├── DateIconRenderer.swift           # Date number + red accent menu bar icon
+├── GlobalHotkey.swift               # Carbon EventHotKey, configurable combo
 ├── AppIntents.swift                 # Shortcuts.app integration
-├── AIDateHelper.swift               # FoundationModels natural language date parsing
-├── AppDesign.swift                  # Design tokens (spacing, radius, colors)
+├── AIDateHelper.swift               # FoundationModels date parsing (macOS 26+)
+├── AppDesign.swift                  # Design tokens
 ├── AppLogger.swift                  # os.Logger categories
+├── PrivacyInfo.xcprivacy            # Privacy manifest
 ├── Info.plist
 ├── Glimpse.entitlements
 └── Assets.xcassets/
 
 GlimpseCore/                         # Local Swift Package (business logic)
 ├── Sources/GlimpseCore/
-│   ├── Dependencies/
-│   │   ├── PreferencesClient.swift  # UserDefaults wrapper
-│   │   ├── CalendarClient.swift     # Calendar math, date formatting
-│   │   ├── EventKitClient.swift     # EKEventStore wrapper
-│   │   └── LaunchAtLoginClient.swift # SMAppService wrapper
-│   ├── Features/
-│   │   ├── CalendarFeature.swift    # Month nav, pin, date selection, events, AI
-│   │   ├── PreferencesFeature.swift # All preference state + delegate actions
-│   │   └── MenuBarFeature.swift     # Display options, date string
-│   └── Models/
-│       ├── CalendarDay.swift
-│       ├── CalendarEvent.swift
-│       ├── GridInfo.swift
-│       └── MenuBarDisplayOptions.swift
-└── Tests/GlimpseCoreTests/
-    ├── CalendarFeatureTests.swift    # 9 TCA TestStore tests
-    ├── PreferencesFeatureTests.swift # 10 TCA TestStore tests
-    └── MenuBarFeatureTests.swift    # 3 TCA TestStore tests
+│   ├── Dependencies/                # PreferencesClient, CalendarClient,
+│   │                                # EventKitClient, LaunchAtLoginClient
+│   ├── Features/                    # CalendarFeature, PreferencesFeature,
+│   │                                # MenuBarFeature
+│   └── Models/                      # CalendarDay, CalendarEvent, GridInfo,
+│                                    # MenuBarDisplayOptions
+└── Tests/GlimpseCoreTests/          # 29 TCA TestStore tests
 
-GlimpseTests/                        # App-level tests
-├── AppDesignTests.swift             # 10 design token tests
-├── DateIconRendererTests.swift      # 1 icon rendering test
-└── MonthBorderShapeTests.swift      # 7 border shape tests
+GlimpseTests/                        # 18 app-level tests
 ```
 
 ## Keyboard Shortcuts
@@ -138,10 +107,22 @@ GlimpseTests/                        # App-level tests
 | ⌘⇧C (configurable) | Toggle calendar from anywhere |
 | ← → | Previous / next month |
 | ↑ ↓ | Previous / next year |
-| Enter | Go to today (when not on current month) |
-| Escape | Close preferences, or close calendar |
-| ⌘G | Activate AI date search |
+| Enter | Go to today |
+| Escape | Close preferences or calendar |
+| ⌘G | AI date search |
+
+## Permissions
+
+| Permission | Why |
+|---|---|
+| **Calendar** | Show today's events (EventKit) |
+
+The app requests calendar access when you click "Show today's events" in the popover. No other permissions are required.
 
 ## License
 
 MIT
+
+## Author
+
+[Rohit Chandani](https://rlchandani.dev/)

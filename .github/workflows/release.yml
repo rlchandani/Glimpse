@@ -1,0 +1,155 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check version bump
+        id: check
+        run: |
+          VERSION=$(grep 'MARKETING_VERSION' Glimpse.xcodeproj/project.pbxproj | head -1 | sed 's/[^0-9.]//g')
+          echo "version=$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "Tag v$VERSION already exists — skipping release"
+          else
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "New version $VERSION detected — will release"
+          fi
+
+  test:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve packages
+        run: xcodebuild -project Glimpse.xcodeproj -scheme Glimpse -resolvePackageDependencies -skipMacroValidation
+
+      - name: Test (App)
+        run: |
+          xcodebuild -project Glimpse.xcodeproj -scheme Glimpse \
+            -skipMacroValidation test \
+            | tail -30
+
+      - name: Test (GlimpseCore)
+        run: cd GlimpseCore && swift test
+
+  release:
+    needs: [check-version, test]
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install signing certificate
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PWD=$(openssl rand -hex 16)
+
+          echo -n "$MACOS_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
+
+          security create-keychain -p "$KEYCHAIN_PWD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PWD" $KEYCHAIN_PATH
+
+          security import $CERTIFICATE_PATH -P "$MACOS_CERTIFICATE_PWD" \
+            -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: \
+            -k "$KEYCHAIN_PWD" $KEYCHAIN_PATH
+
+          security list-keychains -d user -s $KEYCHAIN_PATH
+
+          rm -f $CERTIFICATE_PATH
+
+      - name: Resolve packages
+        run: xcodebuild -project Glimpse.xcodeproj -scheme Glimpse -resolvePackageDependencies -skipMacroValidation
+
+      - name: Build Release archive
+        run: |
+          xcodebuild -project Glimpse.xcodeproj -scheme Glimpse \
+            -configuration Release archive \
+            -archivePath ./build/Glimpse.xcarchive \
+            -skipMacroValidation
+
+      - name: Package and sign with Sparkle
+        env:
+          SPARKLE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          RELEASE_VERSION: ${{ needs.check-version.outputs.version }}
+        run: |
+          cp -R ./build/Glimpse.xcarchive/Products/Applications/Glimpse.app ./build/Glimpse.app
+          ditto -c -k --keepParent ./build/Glimpse.app "./build/Glimpse-${RELEASE_VERSION}.zip"
+
+          # Find Sparkle bin from resolved packages
+          SPARKLE_BIN=$(find ~/Library/Developer/Xcode/DerivedData/Glimpse-*/SourcePackages/artifacts/sparkle/Sparkle/bin -maxdepth 0 2>/dev/null | head -1)
+
+          if [ -n "$SPARKLE_BIN" ] && [ -n "$SPARKLE_KEY" ]; then
+            echo "$SPARKLE_KEY" > /tmp/sparkle_key
+            SIGN_OUTPUT=$("$SPARKLE_BIN/sign_update" "./build/Glimpse-${RELEASE_VERSION}.zip" --ed-key-file /tmp/sparkle_key)
+            rm -f /tmp/sparkle_key
+
+            ED_SIGNATURE=$(echo "$SIGN_OUTPUT" | grep -o 'edSignature="[^"]*"' | cut -d'"' -f2)
+            LENGTH=$(echo "$SIGN_OUTPUT" | grep -o 'length="[^"]*"' | cut -d'"' -f2)
+            BUILD_NUMBER=$(grep 'CURRENT_PROJECT_VERSION' Glimpse.xcodeproj/project.pbxproj | head -1 | sed 's/[^0-9]//g')
+
+            cat > ./build/appcast.xml << APPCAST_EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+            <channel>
+              <title>Glimpse</title>
+              <item>
+                <title>Version ${RELEASE_VERSION}</title>
+                <sparkle:version>${BUILD_NUMBER}</sparkle:version>
+                <sparkle:shortVersionString>${RELEASE_VERSION}</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure
+                  url="https://github.com/rlchandani/Glimpse/releases/download/v${RELEASE_VERSION}/Glimpse-${RELEASE_VERSION}.zip"
+                  length="${LENGTH}"
+                  type="application/octet-stream"
+                  sparkle:edSignature="${ED_SIGNATURE}"
+                />
+              </item>
+            </channel>
+          </rss>
+          APPCAST_EOF
+            echo "Sparkle appcast generated with signature"
+          else
+            echo "Sparkle signing skipped (no key or Sparkle not found)"
+          fi
+
+      - name: Clean up keychain
+        if: always()
+        run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db 2>/dev/null || true
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ needs.check-version.outputs.version }}
+        run: |
+          ASSETS="./build/Glimpse-${RELEASE_VERSION}.zip"
+          if [ -f ./build/appcast.xml ]; then
+            ASSETS="$ASSETS ./build/appcast.xml"
+          fi
+          gh release create "v${RELEASE_VERSION}" \
+            $ASSETS \
+            --title "v${RELEASE_VERSION}" \
+            --generate-notes
