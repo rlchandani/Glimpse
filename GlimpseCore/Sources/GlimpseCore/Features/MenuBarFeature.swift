@@ -18,6 +18,7 @@ public struct MenuBarFeature: Sendable {
         case displayOptionsChanged(MenuBarDisplayOptions)
     }
 
+    @Dependency(\.date) var date
     @Dependency(\.preferencesClient) var preferencesClient
     @Dependency(\.calendarClient) var calendarClient
 
@@ -29,19 +30,19 @@ public struct MenuBarFeature: Sendable {
             case .onAppear:
                 state.displayOptions = preferencesClient.loadDisplayOptions()
                 state.dateString = calendarClient.menuBarDateString(
-                    Date(), state.displayOptions
+                    date.now, state.displayOptions
                 )
                 return .none
 
             case .updateDisplay:
                 state.dateString = calendarClient.menuBarDateString(
-                    Date(), state.displayOptions
+                    date.now, state.displayOptions
                 )
                 return .none
 
             case let .displayOptionsChanged(options):
                 state.displayOptions = options
-                state.dateString = calendarClient.menuBarDateString(Date(), options)
+                state.dateString = calendarClient.menuBarDateString(date.now, options)
                 return .none
             }
         }

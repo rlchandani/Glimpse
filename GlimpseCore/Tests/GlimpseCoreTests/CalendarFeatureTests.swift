@@ -163,21 +163,145 @@ struct CalendarFeatureTests {
 
     @Test
     func onDisappear_resetsPreferencesFlag() async {
+        let now = Date(timeIntervalSince1970: 1000000)
         var state = CalendarFeature.State()
         state.showingPreferences = true
 
         let store = TestStore(initialState: state) {
             CalendarFeature()
         } withDependencies: {
+            $0.date = .constant(now)
             $0.calendarClient.calendarDays = { _, _ in [] }
             $0.calendarClient.gridInfo = { _ in GridInfo(startCol: 0, endCol: 6, endRow: 5) }
         }
 
-        // Use exhaustivity off since displayedMonth = Date() varies by millisecond
         store.exhaustivity = .off
 
         await store.send(.onDisappear) {
             $0.showingPreferences = false
+            $0.displayedMonth = now
         }
+    }
+
+    @Test
+    func dateTapped_selectsDate() async {
+        let cal = Calendar.current
+        let march15 = cal.date(from: DateComponents(year: 2026, month: 3, day: 15))!
+
+        let store = TestStore(
+            initialState: CalendarFeature.State()
+        ) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.eventKitClient.authorizationStatus = { .notDetermined }
+        }
+
+        await store.send(.dateTapped(march15)) {
+            $0.selectedDate = march15
+        }
+    }
+
+    @Test
+    func dateTapped_togglesSelection() async {
+        let cal = Calendar.current
+        let march15 = cal.date(from: DateComponents(year: 2026, month: 3, day: 15))!
+
+        var state = CalendarFeature.State()
+        state.selectedDate = march15
+
+        let store = TestStore(initialState: state) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.eventKitClient.authorizationStatus = { .notDetermined }
+        }
+
+        await store.send(.dateTapped(march15)) {
+            $0.selectedDate = nil
+        }
+    }
+
+    @Test
+    func aiDateResult_navigatesAndSelects() async {
+        let cal = Calendar.current
+        let july4 = cal.date(from: DateComponents(year: 2026, month: 7, day: 4))!
+
+        let store = TestStore(
+            initialState: CalendarFeature.State()
+        ) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.calendarClient.calendarDays = { _, _ in [] }
+            $0.calendarClient.gridInfo = { _ in GridInfo(startCol: 0, endCol: 6, endRow: 5) }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.aiDateResult(july4)) {
+            $0.displayedMonth = july4
+            $0.selectedDate = july4
+        }
+    }
+
+    @Test
+    func aiDateResult_nilDoesNothing() async {
+        let store = TestStore(
+            initialState: CalendarFeature.State()
+        ) {
+            CalendarFeature()
+        }
+
+        await store.send(.aiDateResult(nil))
+    }
+
+    @Test
+    func eventsLoaded_updatesState() async {
+        let events = [
+            CalendarEvent(
+                id: "1", title: "Meeting",
+                startDate: Date(), endDate: Date(),
+                isAllDay: false
+            )
+        ]
+
+        let store = TestStore(
+            initialState: CalendarFeature.State()
+        ) {
+            CalendarFeature()
+        }
+
+        await store.send(.eventsLoaded(events)) {
+            $0.todayEvents = events
+        }
+    }
+
+    @Test
+    func calendarAccessResult_granted_fetchesEvents() async {
+        let store = TestStore(
+            initialState: CalendarFeature.State()
+        ) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
+            $0.eventKitClient.fetchTodayEvents = { [] }
+        }
+
+        await store.send(.calendarAccessResult(true)) {
+            $0.calendarAccessGranted = true
+        }
+
+        await store.receive(\.eventsLoaded)
+    }
+
+    @Test
+    func calendarAccessResult_denied() async {
+        let store = TestStore(
+            initialState: CalendarFeature.State()
+        ) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
+        }
+
+        await store.send(.calendarAccessResult(false))
     }
 }

@@ -16,6 +16,7 @@ struct MenuBarFeatureTests {
         ) {
             MenuBarFeature()
         } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
             $0.preferencesClient.loadDisplayOptions = { options }
             $0.calendarClient.menuBarDateString = { _, _ in "Fri, Mar 20" }
         }
@@ -33,6 +34,7 @@ struct MenuBarFeatureTests {
         ) {
             MenuBarFeature()
         } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
             $0.calendarClient.menuBarDateString = { _, _ in "Sat, Mar 21" }
         }
 
@@ -50,6 +52,7 @@ struct MenuBarFeatureTests {
         ) {
             MenuBarFeature()
         } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 0))
             $0.calendarClient.menuBarDateString = { _, _ in "20" }
         }
 

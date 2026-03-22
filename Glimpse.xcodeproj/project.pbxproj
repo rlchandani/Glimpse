@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		AA00000000000000000001 /* GlimpseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000010 /* GlimpseApp.swift */; };
 		AA00000000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000011 /* Assets.xcassets */; };
+		DD00000000000000000005 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000014 /* PrivacyInfo.xcprivacy */; };
 		AA00000000000000000003 /* CalendarPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000015 /* CalendarPopoverView.swift */; };
 		AA00000000000000000004 /* DateIconRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000016 /* DateIconRenderer.swift */; };
 		AA00000000000000000006 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000018 /* PreferencesView.swift */; };
@@ -20,6 +21,7 @@
 		DD00000000000000000001 /* GlobalHotkey.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000010 /* GlobalHotkey.swift */; };
 		DD00000000000000000002 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000011 /* AppIntents.swift */; };
 		DD00000000000000000003 /* AIDateHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000012 /* AIDateHelper.swift */; };
+		DD00000000000000000006 /* MonthBorderShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000015 /* MonthBorderShape.swift */; };
 		CC00000000000000000001 /* GlimpseCore in Frameworks */ = {isa = PBXBuildFile; productRef = CC00000000000000000002 /* GlimpseCore */; };
 		BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000012 /* MonthBorderShapeTests.swift */; };
 		BB00000000000000000023 /* DateIconRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000013 /* DateIconRendererTests.swift */; };
@@ -53,6 +55,8 @@
 		DD00000000000000000010 /* GlobalHotkey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkey.swift; sourceTree = "<group>"; };
 		DD00000000000000000011 /* AppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntents.swift; sourceTree = "<group>"; };
 		DD00000000000000000012 /* AIDateHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIDateHelper.swift; sourceTree = "<group>"; };
+		DD00000000000000000015 /* MonthBorderShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBorderShape.swift; sourceTree = "<group>"; };
+		DD00000000000000000014 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		BB00000000000000000007 /* GlimpseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GlimpseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB00000000000000000012 /* MonthBorderShapeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBorderShapeTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000013 /* DateIconRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateIconRendererTests.swift; sourceTree = "<group>"; };
@@ -102,9 +106,11 @@
 				DD00000000000000000010 /* GlobalHotkey.swift */,
 				DD00000000000000000011 /* AppIntents.swift */,
 				DD00000000000000000012 /* AIDateHelper.swift */,
+				DD00000000000000000015 /* MonthBorderShape.swift */,
 				AA00000000000000000011 /* Assets.xcassets */,
 				AA00000000000000000012 /* Info.plist */,
 				AA00000000000000000013 /* Glimpse.entitlements */,
+				DD00000000000000000014 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Glimpse;
 			sourceTree = "<group>";
@@ -207,6 +213,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA00000000000000000002 /* Assets.xcassets in Resources */,
+				DD00000000000000000005 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -229,6 +236,7 @@
 				DD00000000000000000001 /* GlobalHotkey.swift in Sources */,
 				DD00000000000000000002 /* AppIntents.swift in Sources */,
 				DD00000000000000000003 /* AIDateHelper.swift in Sources */,
+				DD00000000000000000006 /* MonthBorderShape.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -299,8 +307,11 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};

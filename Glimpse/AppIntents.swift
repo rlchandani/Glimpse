@@ -2,6 +2,8 @@ import AppIntents
 import AppKit
 
 struct ShowCalendarIntent: AppIntent {
+    // Safety: AppIntent static properties are initialized once and read-only after init.
+    // nonisolated(unsafe) required because AppIntent protocol properties are mutable static vars.
     nonisolated(unsafe) static var title: LocalizedStringResource = "Show Glimpse Calendar"
     nonisolated(unsafe) static var description = IntentDescription("Opens the Glimpse calendar popover")
     nonisolated(unsafe) static var openAppWhenRun = true

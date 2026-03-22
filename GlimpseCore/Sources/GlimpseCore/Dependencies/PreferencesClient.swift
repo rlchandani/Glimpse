@@ -13,6 +13,7 @@ public struct PreferencesClient: Sendable {
 
 extension PreferencesClient: DependencyKey {
     public static var liveValue: Self {
+        // Safety: UserDefaults.standard is documented thread-safe for read/write operations
         nonisolated(unsafe) let defaults = UserDefaults.standard
 
         return Self(

@@ -11,6 +11,7 @@ public struct EventKitClient: Sendable {
 
 extension EventKitClient: DependencyKey {
     public static var liveValue: Self {
+        // Safety: EKEventStore is thread-safe for event queries. Static property — created once per app lifecycle.
         nonisolated(unsafe) let store = EKEventStore()
 
         return Self(

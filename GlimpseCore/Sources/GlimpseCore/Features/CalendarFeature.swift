@@ -25,9 +25,6 @@ public struct CalendarFeature: Sendable {
             let week = cal.component(.weekOfYear, from: date)
             return "\(formatter.string(from: date)) — Week \(week)"
         }
-        public var aiQuery: String = ""
-        public var aiIsProcessing: Bool = false
-        public var aiError: String?
 
         public var calendar: Calendar {
             var cal = Calendar.current
@@ -36,7 +33,7 @@ public struct CalendarFeature: Sendable {
         }
 
         public var isShowingCurrentMonth: Bool {
-            Calendar.current.isDate(displayedMonth, equalTo: Date(), toGranularity: .month)
+            Calendar.current.isDate(displayedMonth, equalTo: .now, toGranularity: .month)
         }
 
         public var monthYearString: String {
@@ -65,12 +62,10 @@ public struct CalendarFeature: Sendable {
         case requestCalendarAccess
         case calendarAccessResult(Bool)
         case eventsLoaded([CalendarEvent])
-        case aiQueryChanged(String)
-        case aiQuerySubmitted
         case aiDateResult(Date?)
-        case aiDismissError
     }
 
+    @Dependency(\.date) var date
     @Dependency(\.calendarClient) var calendarClient
     @Dependency(\.preferencesClient) var preferencesClient
     @Dependency(\.eventKitClient) var eventKitClient
@@ -131,8 +126,8 @@ public struct CalendarFeature: Sendable {
                 return .none
 
             case .goToToday:
-                state.displayedMonth = Date()
-                state.selectedDate = Date()
+                state.displayedMonth = date.now
+                state.selectedDate = date.now
                 recomputeDays(&state)
                 return .none
 
@@ -192,37 +187,17 @@ public struct CalendarFeature: Sendable {
                 state.todayEvents = events
                 return .none
 
-            case let .aiQueryChanged(query):
-                state.aiQuery = query
-                state.aiError = nil
-                return .none
-
-            case .aiQuerySubmitted:
-                let query = state.aiQuery.trimmingCharacters(in: .whitespaces)
-                guard !query.isEmpty else { return .none }
-                state.aiIsProcessing = true
-                state.aiError = nil
-                return .none // The view handles calling AIDateHelper since it's app-level
-
             case let .aiDateResult(date):
-                state.aiIsProcessing = false
                 if let date {
                     state.displayedMonth = date
                     state.selectedDate = date
-                    state.aiQuery = ""
                     recomputeDays(&state)
-                } else {
-                    state.aiError = "Couldn't understand that date"
                 }
-                return .none
-
-            case .aiDismissError:
-                state.aiError = nil
                 return .none
 
             case .onDisappear:
                 state.showingPreferences = false
-                state.displayedMonth = Date()
+                state.displayedMonth = date.now
                 recomputeDays(&state)
                 return .none
             }
