@@ -8,6 +8,11 @@ struct CalendarPopoverView: View {
     @State private var scrollAccumulator: CGFloat = 0
     @State private var scrollMonitor: Any?
     @State private var keyMonitor: Any?
+    @State private var aiQueryText: String = ""
+    @State private var aiProcessing: Bool = false
+    @State private var aiErrorMessage: String?
+    @State private var aiFieldActive: Bool = false
+    @FocusState private var aiFieldFocused: Bool
     private let scrollThreshold: CGFloat = 5.0
     private let maxScrollContribution: CGFloat = 1.5
     private let caretHeight = CalendarPanel.caretHeight
@@ -26,7 +31,9 @@ struct CalendarPopoverView: View {
                     )
                 }
                 headerView
+                aiQueryField
                 calendarSection
+                selectedDateInfo
                 eventsSection
                 footerView
             }
@@ -52,6 +59,12 @@ struct CalendarPopoverView: View {
 
     private func setupKeyMonitor() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            // Cmd+G — activate inline AI input
+            if event.keyCode == 5 && event.modifierFlags.contains(.command) {
+                aiFieldActive = true
+                return nil
+            }
+
             switch event.keyCode {
             case 123:
                 store.send(.goToPreviousMonth)
@@ -65,12 +78,21 @@ struct CalendarPopoverView: View {
             case 126: // Up arrow
                 store.send(.goToPreviousYear)
                 return nil
-            case 36, 76:
-                if !store.isShowingCurrentMonth {
+            case 36, 76: // Enter
+                if aiFieldActive {
+                    submitAIQuery()
+                } else if !store.isShowingCurrentMonth {
                     store.send(.goToToday)
                 }
                 return nil
             case 53:
+                if aiFieldActive {
+                    aiFieldActive = false
+                    aiQueryText = ""
+                    aiErrorMessage = nil
+                    panel?.deactivateTextInput()
+                    return nil
+                }
                 if store.showingPreferences {
                     withAnimation(AppDesign.Animation.standard) {
                         _ = store.send(.togglePreferences)
@@ -182,6 +204,115 @@ struct CalendarPopoverView: View {
         }
     }
 
+    // MARK: - AI Query Field
+
+    @ViewBuilder
+    private var aiQueryField: some View {
+        HStack(spacing: AppDesign.Spacing.sm) {
+            Image(systemName: "sparkle")
+                .font(.caption)
+                .foregroundStyle(
+                    aiProcessing ? Color.accentColor :
+                    aiFieldActive ? Color.accentColor :
+                    Color.secondary.opacity(0.4)
+                )
+
+            if aiFieldActive {
+                TextField("e.g. next Friday, Christmas...", text: $aiQueryText)
+                    .textFieldStyle(.plain)
+                    .font(.subheadline)
+                    .focused($aiFieldFocused)
+                    .onSubmit { submitAIQuery() }
+                    .onAppear {
+                        panel?.activateForTextInput()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            aiFieldFocused = true
+                        }
+                    }
+
+                if aiProcessing {
+                    ProgressView()
+                        .scaleEffect(0.5)
+                        .frame(width: 16, height: 16)
+                } else {
+                    Button {
+                        aiFieldActive = false
+                        aiQueryText = ""
+                        aiErrorMessage = nil
+                        panel?.deactivateTextInput()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .focusable(false)
+                }
+            } else {
+                Button {
+                    aiFieldActive = true
+                } label: {
+                    Text("Go to date...  ⌘G")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+                .focusable(false)
+            }
+        }
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.vertical, AppDesign.Spacing.xs + 2)
+        .background(
+            RoundedRectangle(cornerRadius: AppDesign.CornerRadius.sm + 2)
+                .fill(Color.secondary.opacity(aiFieldActive ? 0.10 : 0.06))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AppDesign.CornerRadius.sm + 2)
+                .strokeBorder(
+                    aiFieldActive ? Color.accentColor.opacity(0.3) : Color.clear,
+                    lineWidth: 1
+                )
+        )
+        .accessibilityLabel("Go to date using AI")
+
+        if let error = aiErrorMessage {
+            Text(error)
+                .font(.caption)
+                .foregroundStyle(.red)
+        }
+    }
+
+    private func submitAIQuery() {
+        let query = aiQueryText.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty, !aiProcessing else { return }
+        aiProcessing = true
+        aiErrorMessage = nil
+
+        if #available(macOS 26, *) {
+            Task {
+                NSLog("[Glimpse] Calling AI for query: %@", query)
+                let date = await AIDateHelper.parseNaturalLanguageDate(query)
+                await MainActor.run {
+                    aiProcessing = false
+                    if let date {
+                        NSLog("[Glimpse] AI returned date: %@", "\(date)")
+                        aiQueryText = ""
+                        aiFieldActive = false
+                        // Don't call deactivateTextInput here — it would close the panel
+                        store.send(.aiDateResult(date))
+                    } else {
+                        NSLog("[Glimpse] AI returned nil")
+                        aiErrorMessage = "Couldn't parse that date. Try: \"next Friday\" or \"Jan 2028\""
+                    }
+                }
+            }
+        } else {
+            aiProcessing = false
+            aiErrorMessage = "Requires macOS 26"
+        }
+    }
+
     // MARK: - Calendar Section
 
     private var calendarSection: some View {
@@ -276,11 +407,12 @@ struct CalendarPopoverView: View {
     ) -> some View {
         let isToday = day.isCurrentMonth && cal.isDateInToday(day.date)
         let dayNumber = cal.component(.day, from: day.date)
+        let isSelected = store.selectedDate.map { cal.isDate($0, inSameDayAs: day.date) } ?? false
 
         return Text("\(dayNumber)")
             .font(.system(.body, design: .rounded))
-            .fontWeight(isToday ? .bold : .regular)
-            .foregroundStyle(foregroundColor(for: day, isToday: isToday))
+            .fontWeight(isToday || isSelected ? .bold : .regular)
+            .foregroundStyle(foregroundColor(for: day, isToday: isToday, isSelected: isSelected))
             .frame(maxWidth: .infinity)
             .frame(height: AppDesign.Grid.cellHeight)
             .background {
@@ -291,13 +423,25 @@ struct CalendarPopoverView: View {
                             width: AppDesign.Grid.todayCircleSize,
                             height: AppDesign.Grid.todayCircleSize
                         )
+                } else if isSelected {
+                    Circle()
+                        .strokeBorder(Color.accentColor, lineWidth: 2)
+                        .frame(
+                            width: AppDesign.Grid.todayCircleSize,
+                            height: AppDesign.Grid.todayCircleSize
+                        )
                 } else if isWorkdayColumn && day.isCurrentMonth {
                     RoundedRectangle(cornerRadius: 2)
                         .fill(Color.accentColor.opacity(AppDesign.Grid.workdayTintOpacity))
                 }
             }
-            .foregroundStyle(isToday ? .white : foregroundColor(for: day, isToday: false))
+            .foregroundStyle(isToday ? .white : foregroundColor(for: day, isToday: false, isSelected: isSelected))
+            .contentShape(Rectangle())
+            .onTapGesture {
+                store.send(.dateTapped(day.date))
+            }
             .accessibilityLabel(dayAccessibilityLabel(day, dayNumber: dayNumber, isToday: isToday))
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private func dayAccessibilityLabel(
@@ -311,10 +455,31 @@ struct CalendarPopoverView: View {
         return label
     }
 
-    private func foregroundColor(for day: GlimpseCore.CalendarDay, isToday: Bool) -> Color {
+    private func foregroundColor(
+        for day: GlimpseCore.CalendarDay, isToday: Bool, isSelected: Bool = false
+    ) -> Color {
         if isToday { return .white }
+        if isSelected { return Color.accentColor }
         if !day.isCurrentMonth { return .secondary.opacity(AppDesign.Grid.dimmedTextOpacity) }
         return .primary
+    }
+
+    // MARK: - Selected Date Info
+
+    @ViewBuilder
+    private var selectedDateInfo: some View {
+        if let info = store.selectedDateInfo {
+            HStack(spacing: AppDesign.Spacing.sm) {
+                Image(systemName: "calendar.circle")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.accentColor)
+                Text(info)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .accessibilityLabel("Selected date: \(info)")
+        }
     }
 
     // MARK: - Events Section

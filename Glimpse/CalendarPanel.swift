@@ -11,6 +11,7 @@ final class CalendarPanel: NSPanel {
 
     var caretXOffset: CGFloat = 0
     var isPinned = false
+    private var previousApp: NSRunningApplication?
 
     init(contentRect: NSRect, caretOffset: CGFloat) {
         self.caretXOffset = caretOffset
@@ -26,6 +27,7 @@ final class CalendarPanel: NSPanel {
         level = .init(rawValue: Int(CGWindowLevelForKey(.mainMenuWindow)))
         hasShadow = true
         isMovableByWindowBackground = false
+        becomesKeyOnlyIfNeeded = false
         collectionBehavior = [.moveToActiveSpace]
         animationBehavior = .utilityWindow
 
@@ -39,10 +41,25 @@ final class CalendarPanel: NSPanel {
     }
 
     override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+
+    /// Activate the app so TextField can receive focus
+    func activateForTextInput() {
+        previousApp = NSWorkspace.shared.frontmostApplication
+        NSApp.activate(ignoringOtherApps: true)
+        makeKey()
+    }
+
+    /// Restore focus to the previous app
+    func deactivateTextInput() {
+        previousApp?.activate(options: .activateIgnoringOtherApps)
+        previousApp = nil
+    }
 
     override func resignKey() {
         super.resignKey()
         if !isPinned {
+            deactivateTextInput()
             orderOut(nil)
         }
     }

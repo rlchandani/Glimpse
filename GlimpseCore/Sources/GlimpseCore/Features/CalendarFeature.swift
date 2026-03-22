@@ -15,6 +15,19 @@ public struct CalendarFeature: Sendable {
         public var showingPreferences: Bool = false
         public var todayEvents: [CalendarEvent] = []
         public var calendarAccessGranted: Bool = false
+        public var selectedDate: Date?
+
+        public var selectedDateInfo: String? {
+            guard let date = selectedDate else { return nil }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEEE, MMMM d, yyyy"
+            let cal = Calendar.current
+            let week = cal.component(.weekOfYear, from: date)
+            return "\(formatter.string(from: date)) — Week \(week)"
+        }
+        public var aiQuery: String = ""
+        public var aiIsProcessing: Bool = false
+        public var aiError: String?
 
         public var calendar: Calendar {
             var cal = Calendar.current
@@ -44,6 +57,7 @@ public struct CalendarFeature: Sendable {
         case goToPreviousYear
         case goToNextYear
         case goToToday
+        case dateTapped(Date)
         case togglePin
         case togglePreferences
         case closePanel
@@ -51,6 +65,10 @@ public struct CalendarFeature: Sendable {
         case requestCalendarAccess
         case calendarAccessResult(Bool)
         case eventsLoaded([CalendarEvent])
+        case aiQueryChanged(String)
+        case aiQuerySubmitted
+        case aiDateResult(Date?)
+        case aiDismissError
     }
 
     @Dependency(\.calendarClient) var calendarClient
@@ -114,7 +132,32 @@ public struct CalendarFeature: Sendable {
 
             case .goToToday:
                 state.displayedMonth = Date()
+                state.selectedDate = Date()
                 recomputeDays(&state)
+                return .none
+
+            case let .dateTapped(date):
+                // Toggle selection: tap again to deselect
+                if let current = state.selectedDate,
+                   state.calendar.isDate(current, inSameDayAs: date) {
+                    state.selectedDate = nil
+                } else {
+                    state.selectedDate = date
+                }
+                // Fetch events for the selected date if access is granted
+                if state.calendarAccessGranted, state.selectedDate != nil {
+                    return .run { [date] send in
+                        let events = await eventKitClient.fetchTodayEvents()
+                        // Filter events to selected date
+                        let cal = Calendar.current
+                        let filtered = events.filter { event in
+                            cal.isDate(event.startDate, inSameDayAs: date) ||
+                            cal.isDate(event.endDate, inSameDayAs: date) ||
+                            (event.startDate < date && event.endDate > date)
+                        }
+                        await send(.eventsLoaded(filtered))
+                    }
+                }
                 return .none
 
             case .togglePin:
@@ -147,6 +190,34 @@ public struct CalendarFeature: Sendable {
 
             case let .eventsLoaded(events):
                 state.todayEvents = events
+                return .none
+
+            case let .aiQueryChanged(query):
+                state.aiQuery = query
+                state.aiError = nil
+                return .none
+
+            case .aiQuerySubmitted:
+                let query = state.aiQuery.trimmingCharacters(in: .whitespaces)
+                guard !query.isEmpty else { return .none }
+                state.aiIsProcessing = true
+                state.aiError = nil
+                return .none // The view handles calling AIDateHelper since it's app-level
+
+            case let .aiDateResult(date):
+                state.aiIsProcessing = false
+                if let date {
+                    state.displayedMonth = date
+                    state.selectedDate = date
+                    state.aiQuery = ""
+                    recomputeDays(&state)
+                } else {
+                    state.aiError = "Couldn't understand that date"
+                }
+                return .none
+
+            case .aiDismissError:
+                state.aiError = nil
                 return .none
 
             case .onDisappear:
