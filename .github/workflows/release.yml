@@ -91,12 +91,26 @@ jobs:
             -archivePath ./build/Glimpse.xcarchive \
             -skipMacroValidation
 
+      - name: Export archive
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath ./build/Glimpse.xcarchive \
+            -exportOptionsPlist .github/ExportOptions.plist \
+            -exportPath ./build/export \
+            || {
+              echo "exportArchive failed, falling back to manual copy + re-sign"
+              cp -R ./build/Glimpse.xcarchive/Products/Applications/Glimpse.app ./build/export/Glimpse.app
+              # Re-sign all embedded frameworks with the app's signing identity
+              find ./build/export/Glimpse.app/Contents/Frameworks -name "*.framework" -exec codesign --force --sign - --timestamp {} \;
+              codesign --force --sign - --timestamp --deep ./build/export/Glimpse.app
+            }
+
       - name: Package and sign with Sparkle
         env:
           SPARKLE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
           RELEASE_VERSION: ${{ needs.check-version.outputs.version }}
         run: |
-          cp -R ./build/Glimpse.xcarchive/Products/Applications/Glimpse.app ./build/Glimpse.app
+          cp -R ./build/export/Glimpse.app ./build/Glimpse.app
           ditto -c -k --keepParent ./build/Glimpse.app "./build/Glimpse-${RELEASE_VERSION}.zip"
 
           # Find Sparkle bin from resolved packages
