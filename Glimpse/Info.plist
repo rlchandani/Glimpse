@@ -24,5 +24,11 @@
 	<true/>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Glimpse shows your calendar events alongside the month view.</string>
+	<key>SUPublicEDKey</key>
+	<string>r3bpqxl5pEGWf6atYS0ZWP3FZyTVVcFAfDj22fuCioE=</string>
+	<key>SUFeedURL</key>
+	<string>https://github.com/rlchandani/Glimpse/releases/latest/download/appcast.xml</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
 </dict>
 </plist>

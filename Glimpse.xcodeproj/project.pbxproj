@@ -21,6 +21,7 @@
 		DD00000000000000000001 /* GlobalHotkey.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000010 /* GlobalHotkey.swift */; };
 		DD00000000000000000002 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000011 /* AppIntents.swift */; };
 		DD00000000000000000003 /* AIDateHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000012 /* AIDateHelper.swift */; };
+		DD00000000000000000007 /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000016 /* SparkleUpdater.swift */; };
 		DD00000000000000000006 /* MonthBorderShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000015 /* MonthBorderShape.swift */; };
 		CC00000000000000000001 /* GlimpseCore in Frameworks */ = {isa = PBXBuildFile; productRef = CC00000000000000000002 /* GlimpseCore */; };
 		BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000012 /* MonthBorderShapeTests.swift */; };
@@ -56,6 +57,7 @@
 		DD00000000000000000011 /* AppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntents.swift; sourceTree = "<group>"; };
 		DD00000000000000000012 /* AIDateHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIDateHelper.swift; sourceTree = "<group>"; };
 		DD00000000000000000015 /* MonthBorderShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBorderShape.swift; sourceTree = "<group>"; };
+		DD00000000000000000016 /* SparkleUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
 		DD00000000000000000014 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		BB00000000000000000007 /* GlimpseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GlimpseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB00000000000000000012 /* MonthBorderShapeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBorderShapeTests.swift; sourceTree = "<group>"; };
@@ -107,6 +109,7 @@
 				DD00000000000000000011 /* AppIntents.swift */,
 				DD00000000000000000012 /* AIDateHelper.swift */,
 				DD00000000000000000015 /* MonthBorderShape.swift */,
+				DD00000000000000000016 /* SparkleUpdater.swift */,
 				AA00000000000000000011 /* Assets.xcassets */,
 				AA00000000000000000012 /* Info.plist */,
 				AA00000000000000000013 /* Glimpse.entitlements */,
@@ -237,6 +240,7 @@
 				DD00000000000000000002 /* AppIntents.swift in Sources */,
 				DD00000000000000000003 /* AIDateHelper.swift in Sources */,
 				DD00000000000000000006 /* MonthBorderShape.swift in Sources */,
+				DD00000000000000000007 /* SparkleUpdater.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

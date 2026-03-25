@@ -19,6 +19,7 @@ struct PreferencesView: View {
             workdaySelector
             hotkeySection
             launchAtLoginToggle
+            checkForUpdatesButton
 
             Divider()
         }
@@ -228,6 +229,26 @@ struct PreferencesView: View {
             NSEvent.removeMonitor(monitor)
             hotkeyMonitor = nil
         }
+    }
+
+    // MARK: - Check for Updates
+
+    private var checkForUpdatesButton: some View {
+        Button {
+            if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+                appDelegate.sparkleUpdater.checkForUpdates()
+            }
+        } label: {
+            HStack {
+                Text("Check for updates")
+                    .font(.subheadline)
+                Spacer()
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Launch at Login
