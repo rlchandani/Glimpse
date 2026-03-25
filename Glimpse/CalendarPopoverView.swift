@@ -289,6 +289,7 @@ struct CalendarPopoverView: View {
         aiProcessing = true
         aiErrorMessage = nil
 
+        #if canImport(FoundationModels)
         if #available(macOS 26, *) {
             Task {
                 NSLog("[Glimpse] Calling AI for query: %@", query)
@@ -311,6 +312,10 @@ struct CalendarPopoverView: View {
             aiProcessing = false
             aiErrorMessage = "Requires macOS 26"
         }
+        #else
+        aiProcessing = false
+        aiErrorMessage = "AI search not available on this system"
+        #endif
     }
 
     // MARK: - Calendar Section

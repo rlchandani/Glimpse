@@ -1,6 +1,8 @@
 import Foundation
-import FoundationModels
 import SwiftUI
+
+#if canImport(FoundationModels)
+import FoundationModels
 
 @available(macOS 26, *)
 enum AIDateHelper {
@@ -15,7 +17,6 @@ enum AIDateHelper {
             let raw = response.content
             NSLog("[Glimpse AI] Raw response: [%@]", raw)
 
-            // Extract yyyy-MM-dd pattern from response (in case of extra text)
             let regex = try NSRegularExpression(pattern: "\\d{4}-\\d{2}-\\d{2}")
             let range = NSRange(raw.startIndex..., in: raw)
             guard let match = regex.firstMatch(in: raw, range: range),
@@ -37,3 +38,4 @@ enum AIDateHelper {
         }
     }
 }
+#endif
