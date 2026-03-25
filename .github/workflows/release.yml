@@ -85,14 +85,18 @@ jobs:
         run: xcodebuild -project Glimpse.xcodeproj -scheme Glimpse -resolvePackageDependencies -skipMacroValidation
 
       - name: Build Release archive
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
         run: |
           xcodebuild -project Glimpse.xcodeproj -scheme Glimpse \
             -configuration Release archive \
             -archivePath ./build/Glimpse.xcarchive \
-            -skipMacroValidation
+            -skipMacroValidation \
+            DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM}"
 
       - name: Export archive
         run: |
+          mkdir -p ./build/export
           xcodebuild -exportArchive \
             -archivePath ./build/Glimpse.xcarchive \
             -exportOptionsPlist .github/ExportOptions.plist \
@@ -100,7 +104,6 @@ jobs:
             || {
               echo "exportArchive failed, falling back to manual copy + re-sign"
               cp -R ./build/Glimpse.xcarchive/Products/Applications/Glimpse.app ./build/export/Glimpse.app
-              # Re-sign all embedded frameworks with the app's signing identity
               find ./build/export/Glimpse.app/Contents/Frameworks -name "*.framework" -exec codesign --force --sign - --timestamp {} \;
               codesign --force --sign - --timestamp --deep ./build/export/Glimpse.app
             }
