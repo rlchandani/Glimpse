@@ -65,7 +65,8 @@ public struct PreferencesFeature: Sendable {
                 state.launchAtLogin = launchAtLoginClient.isEnabled()
                 state.showAISearch = preferencesClient.loadShowAISearch()
                 state.aiProvider = preferencesClient.loadAIProvider()
-                if let key = keychainClient.load("groq_api_key"), !key.isEmpty {
+                // Check flag only — don't read Keychain on every open (triggers password prompt with ad-hoc signing)
+                if UserDefaults.standard.bool(forKey: "hasGroqAPIKey") {
                     state.groqAPIKey = String(repeating: "•", count: 8)
                 }
                 return .none
@@ -90,6 +91,7 @@ public struct PreferencesFeature: Sendable {
                 return .run { send in
                     do {
                         try keychainClient.save("groq_api_key", key)
+                        UserDefaults.standard.set(true, forKey: "hasGroqAPIKey")
                         await send(.groqKeySaved)
                     } catch {
                         await send(.groqKeySaveFailed(error.localizedDescription))
@@ -101,6 +103,7 @@ public struct PreferencesFeature: Sendable {
                 return .run { send in
                     do {
                         try keychainClient.delete("groq_api_key")
+                        UserDefaults.standard.set(false, forKey: "hasGroqAPIKey")
                         await send(.groqKeySaved)
                     } catch {
                         await send(.groqKeySaveFailed(error.localizedDescription))

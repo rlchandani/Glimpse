@@ -22,7 +22,6 @@ struct PreferencesFeatureTests {
             $0.preferencesClient.loadShowAISearch = { false }
             $0.preferencesClient.loadAIProvider = { .groq }
             $0.launchAtLoginClient.isEnabled = { true }
-            $0.keychainClient.load = { _ in "gsk_test" }
         }
 
         await store.send(.onAppear) {
@@ -32,7 +31,6 @@ struct PreferencesFeatureTests {
             $0.launchAtLogin = true
             $0.aiProvider = .groq
             $0.showAISearch = false
-            $0.groqAPIKey = "••••••••"
         }
     }
 
