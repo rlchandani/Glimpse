@@ -134,9 +134,6 @@ struct PreferencesView: View {
 
     // MARK: - AI Search
 
-    @State private var groqKeyInput: String = ""
-    @State private var showingGroqKeyField: Bool = false
-
     private var aiSearchSection: some View {
         VStack(alignment: .leading, spacing: AppDesign.Spacing.sm) {
             Toggle(isOn: $store.showAISearch.sending(\.setShowAISearch)) {
@@ -156,54 +153,6 @@ struct PreferencesView: View {
                     }
                     .labelsHidden()
                     .frame(width: 130)
-                }
-
-                if showingGroqKeyField {
-                    HStack(spacing: AppDesign.Spacing.sm) {
-                        SecureField("Groq API key", text: $groqKeyInput)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.caption)
-
-                        Button("Save") {
-                            store.send(.setGroqAPIKey(groqKeyInput))
-                            store.send(.saveGroqAPIKey)
-                            groqKeyInput = ""
-                            showingGroqKeyField = false
-                        }
-                        .font(.caption)
-                        .disabled(groqKeyInput.isEmpty)
-
-                        Button("Cancel") {
-                            groqKeyInput = ""
-                            showingGroqKeyField = false
-                        }
-                        .font(.caption)
-                    }
-                } else {
-                    HStack {
-                        if !store.groqAPIKey.isEmpty {
-                            Text("Groq: \(store.groqAPIKey)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Button("Remove") {
-                                store.send(.deleteGroqAPIKey)
-                            }
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                        } else {
-                            Button("Add Groq API key") {
-                                showingGroqKeyField = true
-                            }
-                            .font(.caption)
-                        }
-                    }
-                }
-
-                if let error = store.groqAPIKeySaveError {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.red)
                 }
             }
         }

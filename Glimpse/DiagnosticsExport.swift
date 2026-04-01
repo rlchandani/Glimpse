@@ -68,18 +68,4 @@ enum DiagnosticsExport {
         return fileURL
     }
 
-    static func providerName() -> String {
-        AIDateHelper.providerName()
-    }
-}
-
-// Add providerName to AIDateHelper since we removed it earlier
-extension AIDateHelper {
-    static func providerName() -> String {
-        switch activeProvider() {
-        case .groq: "Groq"
-        case .foundationModels: "On-device AI"
-        case .none: "None"
-        }
-    }
 }

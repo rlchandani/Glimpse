@@ -1,43 +1,39 @@
 import Foundation
 import GlimpseCore
-import Security
 
 #if canImport(FoundationModels)
 import FoundationModels
 #endif
 
 /// Routes AI date queries to the best available provider:
-/// 1. Groq API (if key is configured) — works on any macOS 14+
+/// 1. Cloud AI via proxy (no API key needed) — works on any macOS 14+
 /// 2. Apple FoundationModels (macOS 26+) — on-device, free
 /// 3. Error if neither is available
 enum AIDateHelper {
     enum Provider {
-        case groq
+        case proxy
         case foundationModels
         case none
     }
 
     static func activeProvider() -> Provider {
         let preference = PreferencesClient.liveValue.loadAIProvider()
-        let hasGroqKey = KeychainClient.liveValue.load("groq_api_key") != nil
 
         switch preference {
-        case .groq:
-            return hasGroqKey ? .groq : .none
+        case .proxy:
+            return .proxy
         case .onDevice:
             return onDeviceAvailable() ? .foundationModels : .none
         case .auto:
-            if hasGroqKey { return .groq }
-            if onDeviceAvailable() { return .foundationModels }
-            return .none
+            // Prefer proxy (always available), fall back to on-device
+            return .proxy
         }
     }
 
     static func parseNaturalLanguageDate(_ query: String) async -> Date? {
         switch activeProvider() {
-        case .groq:
-            guard let key = KeychainClient.liveValue.load("groq_api_key") else { return nil }
-            return await GroqProvider.parseDate(query, apiKey: key)
+        case .proxy:
+            return await ProxyProvider.parseDate(query)
         case .foundationModels:
             #if canImport(FoundationModels)
             if #available(macOS 26, *) {
@@ -47,6 +43,14 @@ enum AIDateHelper {
             return nil
         case .none:
             return nil
+        }
+    }
+
+    static func providerName() -> String {
+        switch activeProvider() {
+        case .proxy: "Cloud AI"
+        case .foundationModels: "On-device AI"
+        case .none: "None"
         }
     }
 

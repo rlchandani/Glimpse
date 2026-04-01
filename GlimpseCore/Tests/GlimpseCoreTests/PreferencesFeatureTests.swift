@@ -20,7 +20,7 @@ struct PreferencesFeatureTests {
                 MenuBarDisplayOptions(showIcon: false, showYear: true)
             }
             $0.preferencesClient.loadShowAISearch = { false }
-            $0.preferencesClient.loadAIProvider = { .groq }
+            $0.preferencesClient.loadAIProvider = { .proxy }
             $0.launchAtLoginClient.isEnabled = { true }
         }
 
@@ -29,7 +29,7 @@ struct PreferencesFeatureTests {
             $0.workdays = [2, 3]
             $0.displayOptions = MenuBarDisplayOptions(showIcon: false, showYear: true)
             $0.launchAtLogin = true
-            $0.aiProvider = .groq
+            $0.aiProvider = .proxy
             $0.showAISearch = false
         }
     }
@@ -221,61 +221,5 @@ struct PreferencesFeatureTests {
         await store.receive(\.delegate.preferencesChanged)
     }
 
-    @Test
-    func saveGroqAPIKey_success() async {
-        let store = TestStore(
-            initialState: PreferencesFeature.State()
-        ) {
-            PreferencesFeature()
-        } withDependencies: {
-            $0.keychainClient.save = { _, _ in }
-        }
 
-        await store.send(.setGroqAPIKey("gsk_test123")) {
-            $0.groqAPIKey = "gsk_test123"
-        }
-
-        await store.send(.saveGroqAPIKey)
-
-        await store.receive(\.groqKeySaved)
-    }
-
-    @Test
-    func saveGroqAPIKey_failure() async {
-        let store = TestStore(
-            initialState: PreferencesFeature.State()
-        ) {
-            PreferencesFeature()
-        } withDependencies: {
-            $0.keychainClient.save = { _, _ in throw KeychainError.saveFailed(-1) }
-        }
-
-        await store.send(.setGroqAPIKey("bad_key")) {
-            $0.groqAPIKey = "bad_key"
-        }
-
-        await store.send(.saveGroqAPIKey)
-
-        await store.receive(\.groqKeySaveFailed) {
-            $0.groqAPIKeySaveError = "Keychain save failed: -1"
-        }
-    }
-
-    @Test
-    func deleteGroqAPIKey_success() async {
-        var state = PreferencesFeature.State()
-        state.groqAPIKey = "••••••••"
-
-        let store = TestStore(initialState: state) {
-            PreferencesFeature()
-        } withDependencies: {
-            $0.keychainClient.delete = { _ in }
-        }
-
-        await store.send(.deleteGroqAPIKey) {
-            $0.groqAPIKey = ""
-        }
-
-        await store.receive(\.groqKeySaved)
-    }
 }
