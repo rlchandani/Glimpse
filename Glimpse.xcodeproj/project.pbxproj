@@ -23,6 +23,7 @@
 		DD00000000000000000003 /* AIDateHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000012 /* AIDateHelper.swift */; };
 		DD00000000000000000007 /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000016 /* SparkleUpdater.swift */; };
 		DD00000000000000000008 /* GroqProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000017 /* GroqProvider.swift */; };
+		DD00000000000000000009 /* DiagnosticsExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000018 /* DiagnosticsExport.swift */; };
 		DD00000000000000000006 /* MonthBorderShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000015 /* MonthBorderShape.swift */; };
 		CC00000000000000000001 /* GlimpseCore in Frameworks */ = {isa = PBXBuildFile; productRef = CC00000000000000000002 /* GlimpseCore */; };
 		BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000012 /* MonthBorderShapeTests.swift */; };
@@ -60,6 +61,7 @@
 		DD00000000000000000015 /* MonthBorderShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBorderShape.swift; sourceTree = "<group>"; };
 		DD00000000000000000016 /* SparkleUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
 		DD00000000000000000017 /* GroqProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroqProvider.swift; sourceTree = "<group>"; };
+		DD00000000000000000018 /* DiagnosticsExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsExport.swift; sourceTree = "<group>"; };
 		DD00000000000000000014 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		BB00000000000000000007 /* GlimpseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GlimpseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB00000000000000000012 /* MonthBorderShapeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBorderShapeTests.swift; sourceTree = "<group>"; };
@@ -113,6 +115,7 @@
 				DD00000000000000000015 /* MonthBorderShape.swift */,
 				DD00000000000000000016 /* SparkleUpdater.swift */,
 				DD00000000000000000017 /* GroqProvider.swift */,
+				DD00000000000000000018 /* DiagnosticsExport.swift */,
 				AA00000000000000000011 /* Assets.xcassets */,
 				AA00000000000000000012 /* Info.plist */,
 				AA00000000000000000013 /* Glimpse.entitlements */,
@@ -245,6 +248,7 @@
 				DD00000000000000000006 /* MonthBorderShape.swift in Sources */,
 				DD00000000000000000007 /* SparkleUpdater.swift in Sources */,
 				DD00000000000000000008 /* GroqProvider.swift in Sources */,
+				DD00000000000000000009 /* DiagnosticsExport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

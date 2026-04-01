@@ -21,6 +21,7 @@ struct PreferencesView: View {
             hotkeySection
             launchAtLoginToggle
             checkForUpdatesButton
+            exportDiagnosticsButton
 
             Divider()
         }
@@ -393,6 +394,70 @@ struct PreferencesView: View {
                     updater.userDriver.pendingInstallReply = nil
                 }
                 .font(.caption)
+            }
+        }
+    }
+
+
+    // MARK: - Export Diagnostics
+
+    @State private var diagnosticState: DiagnosticState = .idle
+
+    enum DiagnosticState: Equatable {
+        case idle
+        case exporting
+        case exported(String)
+        case failed(String)
+    }
+
+    private var exportDiagnosticsButton: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Export Diagnostics")
+                    .font(.subheadline)
+                Text("Saves logs and settings to Desktop")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            switch diagnosticState {
+            case .idle:
+                Button("Export") { exportDiagnostics() }
+                    .font(.caption)
+            case .exporting:
+                ProgressView()
+                    .controlSize(.small)
+                    .scaleEffect(0.7)
+            case let .exported(path):
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .font(.system(size: 11))
+                    Button("Show in Finder") {
+                        NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
+                    }
+                    .font(.caption)
+                }
+            case let .failed(msg):
+                Text(msg)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        }
+    }
+
+    private func exportDiagnostics() {
+        diagnosticState = .exporting
+        Task {
+            do {
+                let url = try await DiagnosticsExport.export()
+                await MainActor.run { diagnosticState = .exported(url.path) }
+                try? await Task.sleep(for: .seconds(10))
+                await MainActor.run {
+                    if case .exported = diagnosticState { diagnosticState = .idle }
+                }
+            } catch {
+                await MainActor.run { diagnosticState = .failed(error.localizedDescription) }
             }
         }
     }
