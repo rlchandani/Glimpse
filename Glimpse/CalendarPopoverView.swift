@@ -12,6 +12,7 @@ struct CalendarPopoverView: View {
     @State private var aiProcessing: Bool = false
     @State private var aiErrorMessage: String?
     @State private var aiFieldActive: Bool = false
+    @State private var showAISearch: Bool = PreferencesClient.liveValue.loadShowAISearch()
     @FocusState private var aiFieldFocused: Bool
     private let scrollThreshold: CGFloat = 5.0
     private let maxScrollContribution: CGFloat = 1.5
@@ -29,9 +30,14 @@ struct CalendarPopoverView: View {
                             PreferencesFeature()
                         }
                     )
+                    .onDisappear {
+                        showAISearch = PreferencesClient.liveValue.loadShowAISearch()
+                    }
                 }
                 headerView
-                aiQueryField
+                if showAISearch {
+                    aiQueryField
+                }
                 calendarSection
                 selectedDateInfo
                 eventsSection
@@ -46,6 +52,7 @@ struct CalendarPopoverView: View {
         .frame(width: 300)
         .onAppear {
             store.send(.onAppear)
+            showAISearch = PreferencesClient.liveValue.loadShowAISearch()
             setupKeyMonitor()
             setupScrollMonitor()
         }
@@ -59,8 +66,8 @@ struct CalendarPopoverView: View {
 
     private func setupKeyMonitor() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            // Cmd+G — activate inline AI input
-            if event.keyCode == 5 && event.modifierFlags.contains(.command) {
+            // Cmd+G — activate inline AI input (if enabled)
+            if event.keyCode == 5 && event.modifierFlags.contains(.command) && showAISearch {
                 aiFieldActive = true
                 return nil
             }
@@ -289,33 +296,25 @@ struct CalendarPopoverView: View {
         aiProcessing = true
         aiErrorMessage = nil
 
-        #if canImport(FoundationModels)
-        if #available(macOS 26, *) {
-            Task {
-                NSLog("[Glimpse] Calling AI for query: %@", query)
-                let date = await AIDateHelper.parseNaturalLanguageDate(query)
-                await MainActor.run {
-                    aiProcessing = false
-                    if let date {
-                        NSLog("[Glimpse] AI returned date: %@", "\(date)")
-                        aiQueryText = ""
-                        aiFieldActive = false
-                        // Don't call deactivateTextInput here — it would close the panel
-                        store.send(.aiDateResult(date))
-                    } else {
-                        NSLog("[Glimpse] AI returned nil")
-                        aiErrorMessage = "Couldn't parse that date. Try: \"next Friday\" or \"Jan 2028\""
-                    }
+        guard AIDateHelper.activeProvider() != .none else {
+            aiProcessing = false
+            aiErrorMessage = "Set up Groq API key in preferences or use macOS 26+"
+            return
+        }
+
+        Task {
+            let date = await AIDateHelper.parseNaturalLanguageDate(query)
+            await MainActor.run {
+                aiProcessing = false
+                if let date {
+                    aiQueryText = ""
+                    aiFieldActive = false
+                    store.send(.aiDateResult(date))
+                } else {
+                    aiErrorMessage = "Couldn't parse that date. Try: \"next Friday\" or \"Jan 2028\""
                 }
             }
-        } else {
-            aiProcessing = false
-            aiErrorMessage = "Requires macOS 26"
         }
-        #else
-        aiProcessing = false
-        aiErrorMessage = "AI search not available on this system"
-        #endif
     }
 
     // MARK: - Calendar Section

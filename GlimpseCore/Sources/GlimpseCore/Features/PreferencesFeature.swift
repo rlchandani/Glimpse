@@ -11,6 +11,10 @@ public struct PreferencesFeature: Sendable {
         public var displayOptions: MenuBarDisplayOptions = .default
         public var launchAtLogin: Bool = false
         public var launchAtLoginError: String?
+        public var showAISearch: Bool = true
+        public var aiProvider: AIProvider = .auto
+        public var groqAPIKey: String = ""
+        public var groqAPIKeySaveError: String?
 
         public init() {}
     }
@@ -19,6 +23,13 @@ public struct PreferencesFeature: Sendable {
         case onAppear
         case setStartOfWeekday(Int)
         case toggleWorkday(Int)
+        case setShowAISearch(Bool)
+        case setAIProvider(AIProvider)
+        case setGroqAPIKey(String)
+        case saveGroqAPIKey
+        case deleteGroqAPIKey
+        case groqKeySaved
+        case groqKeySaveFailed(String)
         case setShowIcon(Bool)
         case setShowDayOfWeek(Bool)
         case setShowMonth(Bool)
@@ -40,6 +51,7 @@ public struct PreferencesFeature: Sendable {
 
     @Dependency(\.preferencesClient) var preferencesClient
     @Dependency(\.launchAtLoginClient) var launchAtLoginClient
+    @Dependency(\.keychainClient) var keychainClient
 
     public init() {}
 
@@ -51,6 +63,56 @@ public struct PreferencesFeature: Sendable {
                 state.workdays = preferencesClient.loadWorkdays()
                 state.displayOptions = preferencesClient.loadDisplayOptions()
                 state.launchAtLogin = launchAtLoginClient.isEnabled()
+                state.showAISearch = preferencesClient.loadShowAISearch()
+                state.aiProvider = preferencesClient.loadAIProvider()
+                if let key = keychainClient.load("groq_api_key"), !key.isEmpty {
+                    state.groqAPIKey = String(repeating: "•", count: 8)
+                }
+                return .none
+
+            case let .setShowAISearch(enabled):
+                state.showAISearch = enabled
+                preferencesClient.saveShowAISearch(enabled)
+                return .send(.delegate(.preferencesChanged))
+
+            case let .setAIProvider(provider):
+                state.aiProvider = provider
+                preferencesClient.saveAIProvider(provider)
+                return .none
+
+            case let .setGroqAPIKey(key):
+                state.groqAPIKey = key
+                state.groqAPIKeySaveError = nil
+                return .none
+
+            case .saveGroqAPIKey:
+                let key = state.groqAPIKey
+                return .run { send in
+                    do {
+                        try keychainClient.save("groq_api_key", key)
+                        await send(.groqKeySaved)
+                    } catch {
+                        await send(.groqKeySaveFailed(error.localizedDescription))
+                    }
+                }
+
+            case .deleteGroqAPIKey:
+                state.groqAPIKey = ""
+                return .run { send in
+                    do {
+                        try keychainClient.delete("groq_api_key")
+                        await send(.groqKeySaved)
+                    } catch {
+                        await send(.groqKeySaveFailed(error.localizedDescription))
+                    }
+                }
+
+            case .groqKeySaved:
+                state.groqAPIKeySaveError = nil
+                return .none
+
+            case let .groqKeySaveFailed(errorMessage):
+                state.groqAPIKeySaveError = errorMessage
                 return .none
 
             case let .setStartOfWeekday(day):

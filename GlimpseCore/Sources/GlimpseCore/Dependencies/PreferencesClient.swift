@@ -9,6 +9,10 @@ public struct PreferencesClient: Sendable {
     public var saveWorkdays: @Sendable (Set<Int>) -> Void
     public var loadDisplayOptions: @Sendable () -> MenuBarDisplayOptions = { .default }
     public var saveDisplayOptions: @Sendable (MenuBarDisplayOptions) -> Void
+    public var loadShowAISearch: @Sendable () -> Bool = { true }
+    public var saveShowAISearch: @Sendable (Bool) -> Void
+    public var loadAIProvider: @Sendable () -> AIProvider = { .auto }
+    public var saveAIProvider: @Sendable (AIProvider) -> Void
 }
 
 extension PreferencesClient: DependencyKey {
@@ -54,6 +58,24 @@ extension PreferencesClient: DependencyKey {
                 defaults.set(options.showMonth, forKey: "showMonth")
                 defaults.set(options.showDate, forKey: "showDate")
                 defaults.set(options.showYear, forKey: "showYear")
+            },
+            loadShowAISearch: {
+                defaults.object(forKey: "showAISearch") != nil
+                    ? defaults.bool(forKey: "showAISearch")
+                    : true
+            },
+            saveShowAISearch: { value in
+                defaults.set(value, forKey: "showAISearch")
+            },
+            loadAIProvider: {
+                if let raw = defaults.string(forKey: "aiProvider"),
+                   let provider = AIProvider(rawValue: raw) {
+                    return provider
+                }
+                return .auto
+            },
+            saveAIProvider: { provider in
+                defaults.set(provider.rawValue, forKey: "aiProvider")
             }
         )
     }
