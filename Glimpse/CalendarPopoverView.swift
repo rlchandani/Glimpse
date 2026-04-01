@@ -14,6 +14,10 @@ struct CalendarPopoverView: View {
     @State private var aiFieldActive: Bool = false
     @State private var showAISearch: Bool = PreferencesClient.liveValue.loadShowAISearch()
     @FocusState private var aiFieldFocused: Bool
+    @State private var showQuitConfirm: Bool = false
+    @State private var preferencesStore = Store(initialState: PreferencesFeature.State()) {
+        PreferencesFeature()
+    }
     private let scrollThreshold: CGFloat = 5.0
     private let maxScrollContribution: CGFloat = 1.5
     private let caretHeight = CalendarPanel.caretHeight
@@ -25,18 +29,17 @@ struct CalendarPopoverView: View {
 
             VStack(spacing: 12) {
                 if store.showingPreferences {
-                    PreferencesView(
-                        store: Store(initialState: PreferencesFeature.State()) {
-                            PreferencesFeature()
+                    PreferencesView(store: preferencesStore)
+                        .onDisappear {
+                            withAnimation(AppDesign.Animation.standard) {
+                                showAISearch = PreferencesClient.liveValue.loadShowAISearch()
+                            }
                         }
-                    )
-                    .onDisappear {
-                        showAISearch = PreferencesClient.liveValue.loadShowAISearch()
-                    }
                 }
                 headerView
                 if showAISearch {
                     aiQueryField
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                 }
                 calendarSection
                 selectedDateInfo
@@ -59,6 +62,15 @@ struct CalendarPopoverView: View {
         .onDisappear {
             removeMonitors()
             store.send(.onDisappear)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .calendarPreferencesDidChange)) { _ in
+            store.send(.reloadPreferences)
+            showQuitConfirm = false
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .aiSearchSettingDidChange)) { _ in
+            withAnimation(AppDesign.Animation.standard) {
+                showAISearch = PreferencesClient.liveValue.loadShowAISearch()
+            }
         }
     }
 
@@ -246,7 +258,7 @@ struct CalendarPopoverView: View {
                         aiFieldActive = false
                         aiQueryText = ""
                         aiErrorMessage = nil
-                        panel?.deactivateTextInput()
+                        // Don't call deactivateTextInput — it closes the panel
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.caption)
@@ -281,6 +293,12 @@ struct CalendarPopoverView: View {
                     lineWidth: 1
                 )
         )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if !aiFieldActive {
+                aiFieldActive = true
+            }
+        }
         .accessibilityLabel("Go to date using AI")
 
         if let error = aiErrorMessage {
@@ -503,6 +521,7 @@ struct CalendarPopoverView: View {
                 .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .focusable(false)
             .accessibilityLabel("Grant calendar access to show events")
         } else if store.todayEvents.isEmpty {
             HStack {
@@ -557,60 +576,129 @@ struct CalendarPopoverView: View {
     private var footerView: some View {
         VStack(spacing: AppDesign.Spacing.sm) {
             Divider()
-            HStack {
-                Button {
-                    NSApplication.shared.terminate(nil)
-                } label: {
-                    Image(systemName: "power")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .focusable(false)
-                .accessibilityLabel("Quit Glimpse")
 
-                Spacer()
-
-                Button {
-                    store.send(.togglePin)
-                    panel?.isPinned = store.isPinned
-                } label: {
-                    Image(systemName: store.isPinned ? "pin.fill" : "pin")
-                        .font(.body)
-                        .foregroundStyle(store.isPinned ? Color.accentColor : .secondary)
-                        .rotationEffect(.degrees(store.isPinned ? 0 : 45))
-                }
-                .buttonStyle(.plain)
-                .focusable(false)
-                .accessibilityLabel(store.isPinned ? "Unpin window" : "Pin window")
-
-                Button(action: openAppleCalendar) {
-                    Image(systemName: "calendar")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .focusable(false)
-                .accessibilityLabel("Open Calendar app")
-
-                Button {
-                    withAnimation(AppDesign.Animation.standard) {
-                        _ = store.send(.togglePreferences)
-                    }
-                } label: {
-                    Image(systemName: store.showingPreferences ? "gearshape.fill" : "gearshape")
-                        .font(.body)
-                        .foregroundStyle(
-                            store.showingPreferences ? Color.accentColor : .secondary
-                        )
-                }
-                .buttonStyle(.plain)
-                .focusable(false)
-                .accessibilityLabel(
-                    store.showingPreferences ? "Close preferences" : "Open preferences"
-                )
+            if showQuitConfirm {
+                quitConfirmation
+            } else {
+                footerButtons
             }
         }
+    }
+
+    private var footerButtons: some View {
+        HStack {
+            Button {
+                withAnimation(AppDesign.Animation.standard) {
+                    showQuitConfirm = true
+                }
+            } label: {
+                Image(systemName: "power")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+            .accessibilityLabel("Quit Glimpse")
+
+            Spacer()
+
+            Button {
+                AboutWindow.show()
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+            .accessibilityLabel("About Glimpse")
+
+            Button {
+                store.send(.togglePin)
+                panel?.isPinned = store.isPinned
+            } label: {
+                Image(systemName: store.isPinned ? "pin.fill" : "pin")
+                    .font(.body)
+                    .foregroundStyle(store.isPinned ? Color.accentColor : .secondary)
+                    .rotationEffect(.degrees(store.isPinned ? 0 : 45))
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+            .accessibilityLabel(store.isPinned ? "Unpin window" : "Pin window")
+
+            Button(action: openAppleCalendar) {
+                Image(systemName: "calendar")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+            .accessibilityLabel("Open Calendar app")
+
+            Button {
+                withAnimation(AppDesign.Animation.standard) {
+                    _ = store.send(.togglePreferences)
+                }
+            } label: {
+                Image(systemName: store.showingPreferences ? "gearshape.fill" : "gearshape")
+                    .font(.body)
+                    .foregroundStyle(
+                        store.showingPreferences ? Color.accentColor : .secondary
+                    )
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+            .accessibilityLabel(
+                store.showingPreferences ? "Close preferences" : "Open preferences"
+            )
+        }
+    }
+
+    private var quitConfirmation: some View {
+        HStack(spacing: AppDesign.Spacing.sm) {
+            Image(systemName: "power")
+                .font(.body)
+                .foregroundStyle(Color.red.opacity(0.8))
+
+            Text("Quit Glimpse?")
+                .font(.subheadline.weight(.medium))
+
+            Spacer()
+
+            Button {
+                withAnimation(AppDesign.Animation.standard) {
+                    showQuitConfirm = false
+                }
+            } label: {
+                Text("Cancel")
+                    .font(.caption.weight(.medium))
+                    .padding(.horizontal, AppDesign.Spacing.sm + 2)
+                    .padding(.vertical, AppDesign.Spacing.xs)
+                    .background(
+                        RoundedRectangle(cornerRadius: AppDesign.CornerRadius.sm + 2)
+                            .fill(Color.secondary.opacity(0.12))
+                    )
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+
+            Button {
+                NSApplication.shared.terminate(nil)
+            } label: {
+                Text("Quit")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, AppDesign.Spacing.sm + 2)
+                    .padding(.vertical, AppDesign.Spacing.xs)
+                    .background(
+                        RoundedRectangle(cornerRadius: AppDesign.CornerRadius.sm + 2)
+                            .fill(Color.red)
+                    )
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+        }
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
     }
 
     private func openAppleCalendar() {

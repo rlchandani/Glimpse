@@ -304,4 +304,31 @@ struct CalendarFeatureTests {
 
         await store.send(.calendarAccessResult(false))
     }
+
+
+    @Test
+    func reloadPreferences_updatesWeekdayAndWorkdays() async {
+        let testDays = [
+            CalendarDay(date: Date(), isCurrentMonth: true)
+        ]
+
+        // Start with defaults
+        let store = TestStore(
+            initialState: CalendarFeature.State()
+        ) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.preferencesClient.loadStartOfWeekday = { 3 }
+            $0.preferencesClient.loadWorkdays = { [2, 3, 4] }
+            $0.calendarClient.calendarDays = { _, _ in testDays }
+            $0.calendarClient.gridInfo = { _ in GridInfo(startCol: 0, endCol: 2, endRow: 4) }
+        }
+
+        await store.send(.reloadPreferences) {
+            $0.startOfWeekday = 3
+            $0.workdays = [2, 3, 4]
+            $0.days = testDays
+            $0.gridInfo = GridInfo(startCol: 0, endCol: 2, endRow: 4)
+        }
+    }
 }

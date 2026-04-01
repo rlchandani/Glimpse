@@ -8,112 +8,189 @@ struct PreferencesView: View {
 
     private let allWeekdays = Array(1...7)
 
+    private var previewDateString: String {
+        CalendarClient.liveValue.menuBarDateString(Date(), store.displayOptions)
+    }
+
+    private func notifyMenuBarChanged() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            NotificationCenter.default.post(name: .menuBarDisplayDidChange, object: nil)
+        }
+    }
+
+    private func notifyCalendarChanged() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            NotificationCenter.default.post(name: .calendarPreferencesDidChange, object: nil)
+        }
+    }
+
+    private func displayBinding(
+        keyPath: WritableKeyPath<MenuBarDisplayOptions, Bool>,
+        action: @escaping (Bool) -> PreferencesFeature.Action
+    ) -> Binding<Bool> {
+        Binding(
+            get: { store.displayOptions[keyPath: keyPath] },
+            set: { newValue in
+                store.send(action(newValue))
+                notifyMenuBarChanged()
+            }
+        )
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: AppDesign.Spacing.md) {
-            Text("Preferences")
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
-
-            menuBarDisplaySection
-            startOfWeekPicker
-            workdaySelector
-            aiSearchSection
-            hotkeySection
-            launchAtLoginToggle
-            checkForUpdatesButton
-            exportDiagnosticsButton
-
-            Divider()
+        VStack(alignment: .leading, spacing: AppDesign.Spacing.sm + 2) {
+            displayCard
+            calendarCard
+            featuresCard
+            brandedDivider
+                .padding(.top, AppDesign.Spacing.xs)
         }
         .onAppear { store.send(.onAppear) }
     }
 
-    // MARK: - Menu Bar Display
+    // MARK: - Reusable Card Container
 
-    private var menuBarDisplaySection: some View {
+    private func settingsCard<Content: View>(
+        _ title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
         VStack(alignment: .leading, spacing: AppDesign.Spacing.sm) {
-            Text("Menu bar display:")
-                .font(.subheadline)
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .tracking(0.5)
 
-            HStack(spacing: 12) {
-                Toggle("Icon", isOn: $store.displayOptions.showIcon.sending(\.setShowIcon))
-                Toggle("Day", isOn: $store.displayOptions.showDayOfWeek.sending(\.setShowDayOfWeek))
-                Toggle("Month", isOn: $store.displayOptions.showMonth.sending(\.setShowMonth))
-                Toggle("Date", isOn: $store.displayOptions.showDate.sending(\.setShowDate))
-                Toggle("Year", isOn: $store.displayOptions.showYear.sending(\.setShowYear))
+            VStack(alignment: .leading, spacing: AppDesign.Spacing.sm) {
+                content()
             }
-            .font(.caption)
-
-            let showIcon = store.displayOptions.showIcon
-            HStack(spacing: 0) {
-                if showIcon {
-                    Image(nsImage: DateIconRenderer.render())
-                        .padding(.horizontal, AppDesign.StatusItem.padding)
-                }
-                if showIcon {
-                    Divider()
-                        .frame(height: AppDesign.Spacing.md)
-                }
-                Text("Preview")
-                    .font(.system(
-                        size: AppDesign.StatusItem.fontSize, weight: .medium
-                    ))
-                    .padding(.horizontal, AppDesign.StatusItem.padding)
-            }
-            .padding(.vertical, 3)
-            .overlay(
-                RoundedRectangle(cornerRadius: AppDesign.StatusItem.borderCornerRadius)
-                    .strokeBorder(
-                        Color.secondary.opacity(AppDesign.StatusItem.borderOpacity),
-                        lineWidth: 1
-                    )
+            .padding(AppDesign.Spacing.sm + 2)
+            .background(
+                RoundedRectangle(cornerRadius: AppDesign.CornerRadius.md)
+                    .fill(Color.secondary.opacity(0.08))
             )
         }
     }
 
-    // MARK: - Start of Week
+    // MARK: - Display Card
 
-    private var startOfWeekPicker: some View {
-        HStack {
-            Text("Week starts on:")
-                .font(.subheadline)
-            Spacer()
-            Picker("Week start day", selection: $store.startOfWeekday.sending(\.setStartOfWeekday)) {
-                ForEach(allWeekdays, id: \.self) { weekday in
-                    Text(Calendar.current.weekdaySymbols[weekday - 1])
-                        .tag(weekday)
-                }
+    private var displayCard: some View {
+        settingsCard("Display") {
+            // Preview
+            menuBarPreview
+                .frame(maxWidth: .infinity)
+
+            // Toggle pills row
+            displayToggleRow
+
+            cardDivider
+
+            // Filled background
+            settingsRow {
+                Text("Filled background")
+                Spacer()
+                Toggle("", isOn: displayBinding(
+                    keyPath: \.showFilledBackground,
+                    action: { .setShowFilledBackground($0) }
+                ))
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+                .labelsHidden()
             }
-            .labelsHidden()
-            .frame(width: 120)
-            .accessibilityLabel("Week starts on")
         }
     }
 
-    // MARK: - Workday Selection
-
-    private var workdaySelector: some View {
-        VStack(alignment: .leading, spacing: AppDesign.Spacing.sm) {
-            Text("Workdays:")
-                .font(.subheadline)
-
-            HStack(spacing: AppDesign.Spacing.sm - 2) {
-                ForEach(allWeekdays, id: \.self) { weekday in
-                    workdayToggle(weekday)
-                }
-            }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Workday selection")
+    private var menuBarPreview: some View {
+        StatusItemPreview(
+            displayOptions: store.displayOptions,
+            dateString: previewDateString
+        )
+        .frame(height: AppDesign.StatusItem.height)
+        .fixedSize()
     }
 
-    private func workdayToggle(_ weekday: Int) -> some View {
+    private var displayToggleRow: some View {
+        let options: [(String, WritableKeyPath<MenuBarDisplayOptions, Bool>, (Bool) -> PreferencesFeature.Action)] = [
+            ("Icon", \.showIcon, { .setShowIcon($0) }),
+            ("Day", \.showDayOfWeek, { .setShowDayOfWeek($0) }),
+            ("Mon", \.showMonth, { .setShowMonth($0) }),
+            ("Date", \.showDate, { .setShowDate($0) }),
+            ("Year", \.showYear, { .setShowYear($0) }),
+        ]
+
+        return HStack(spacing: AppDesign.Spacing.xs + 2) {
+            ForEach(options, id: \.0) { label, keyPath, action in
+                let isOn = store.displayOptions[keyPath: keyPath]
+                Button {
+                    store.send(action(!isOn))
+                    notifyMenuBarChanged()
+                } label: {
+                    Text(label)
+                        .font(.caption2.weight(isOn ? .bold : .regular))
+                        .padding(.horizontal, AppDesign.Spacing.sm)
+                        .padding(.vertical, AppDesign.Spacing.xs)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppDesign.CornerRadius.sm + 2)
+                                .fill(isOn ? Color.accentColor : Color.secondary.opacity(0.12))
+                        )
+                        .foregroundStyle(isOn ? .white : .secondary)
+                }
+                .buttonStyle(.plain)
+                .focusable(false)
+                .contentShape(RoundedRectangle(cornerRadius: AppDesign.CornerRadius.sm + 2))
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Calendar Card
+
+    private var calendarCard: some View {
+        settingsCard("Calendar") {
+            // Week starts on
+            settingsRow {
+                Text("Week starts on")
+                Spacer()
+                Picker("", selection: Binding(
+                    get: { store.startOfWeekday },
+                    set: { newValue in
+                        store.send(.setStartOfWeekday(newValue))
+                        notifyCalendarChanged()
+                    }
+                )) {
+                    ForEach(allWeekdays, id: \.self) { weekday in
+                        Text(Calendar.current.weekdaySymbols[weekday - 1])
+                            .tag(weekday)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 110)
+            }
+
+            cardDivider
+
+            // Workdays
+            VStack(alignment: .leading, spacing: AppDesign.Spacing.sm) {
+                Text("Workdays")
+                    .font(.subheadline)
+
+                HStack(spacing: AppDesign.Spacing.xs) {
+                    ForEach(allWeekdays, id: \.self) { weekday in
+                        workdayPill(weekday)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    private func workdayPill(_ weekday: Int) -> some View {
         let isSelected = store.workdays.contains(weekday)
         let symbol = Calendar.current.veryShortWeekdaySymbols[weekday - 1]
         let fullName = Calendar.current.weekdaySymbols[weekday - 1]
 
         return Button {
             store.send(.toggleWorkday(weekday))
+            notifyCalendarChanged()
         } label: {
             Text(symbol)
                 .font(.caption.weight(isSelected ? .bold : .regular))
@@ -123,28 +200,44 @@ struct PreferencesView: View {
                 )
                 .background(
                     RoundedRectangle(cornerRadius: AppDesign.CornerRadius.sm + 2)
-                        .fill(isSelected ? Color.accentColor : Color.clear)
+                        .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.12))
                 )
                 .foregroundStyle(isSelected ? .white : .secondary)
+                .contentShape(RoundedRectangle(cornerRadius: AppDesign.CornerRadius.sm + 2))
         }
         .buttonStyle(.plain)
+        .focusable(false)
         .accessibilityLabel("\(fullName), \(isSelected ? "workday" : "not a workday")")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
-    // MARK: - AI Search
+    // MARK: - Features Card
 
-    private var aiSearchSection: some View {
-        VStack(alignment: .leading, spacing: AppDesign.Spacing.sm) {
-            Toggle(isOn: $store.showAISearch.sending(\.setShowAISearch)) {
+    private var featuresCard: some View {
+        settingsCard("Features") {
+            // AI date search
+            settingsRow {
                 Text("AI date search")
-                    .font(.subheadline)
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { store.showAISearch },
+                    set: { newValue in
+                        store.send(.setShowAISearch(newValue))
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            NotificationCenter.default.post(name: .aiSearchSettingDidChange, object: nil)
+                        }
+                    }
+                ))
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                    .labelsHidden()
             }
 
             if store.showAISearch {
-                HStack {
-                    Text("Provider:")
-                        .font(.subheadline)
+                cardDivider
+
+                settingsRow {
+                    Text("Provider")
                     Spacer()
                     Picker("", selection: $store.aiProvider.sending(\.setAIProvider)) {
                         ForEach(GlimpseCore.AIProvider.allCases, id: \.self) { provider in
@@ -152,8 +245,32 @@ struct PreferencesView: View {
                         }
                     }
                     .labelsHidden()
-                    .frame(width: 130)
+                    .frame(width: 110)
                 }
+            }
+
+            cardDivider
+
+            // Global shortcut
+            hotkeyRow
+
+            cardDivider
+
+            // Launch at login
+            settingsRow {
+                Text("Launch at login")
+                Spacer()
+                Toggle("", isOn: $store.launchAtLogin.sending(\.setLaunchAtLogin))
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                    .labelsHidden()
+            }
+
+            if let error = store.launchAtLoginError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .padding(.top, AppDesign.Spacing.xs)
             }
         }
     }
@@ -168,29 +285,31 @@ struct PreferencesView: View {
     @State private var isRecordingHotkey = false
     @State private var hotkeyMonitor: Any?
 
-    private var hotkeySection: some View {
-        VStack(alignment: .leading, spacing: AppDesign.Spacing.sm) {
-            HStack {
-                Toggle(isOn: $hotkeyEnabled) {
-                    Text("Global shortcut")
-                        .font(.subheadline)
-                }
-                .onChange(of: hotkeyEnabled) { _, enabled in
-                    if enabled {
-                        let combo = HotkeyCombo.load()
-                        GlobalHotkey.register(combo: combo) {
-                            if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
-                                appDelegate.calendarStatusItem.statusItemClicked()
-                            }
-                        }
-                    } else {
-                        GlobalHotkey.unregister()
-                    }
-                    UserDefaults.standard.set(enabled, forKey: "hotkeyEnabled")
-                }
-
+    private var hotkeyRow: some View {
+        VStack(spacing: AppDesign.Spacing.sm) {
+            settingsRow {
+                Text("Global shortcut")
                 Spacer()
+                Toggle("", isOn: $hotkeyEnabled)
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                    .labelsHidden()
+                    .onChange(of: hotkeyEnabled) { _, enabled in
+                        if enabled {
+                            let combo = HotkeyCombo.load()
+                            GlobalHotkey.register(combo: combo) {
+                                if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+                                    appDelegate.calendarStatusItem.statusItemClicked()
+                                }
+                            }
+                        } else {
+                            GlobalHotkey.unregister()
+                        }
+                        UserDefaults.standard.set(enabled, forKey: "hotkeyEnabled")
+                    }
+            }
 
+            if hotkeyEnabled {
                 Button {
                     if isRecordingHotkey {
                         stopRecording()
@@ -199,15 +318,20 @@ struct PreferencesView: View {
                     }
                 } label: {
                     Text(isRecordingHotkey ? "Press shortcut..." : GlobalHotkey.currentCombo.displayString)
-                        .font(.system(.body, design: .monospaced).weight(.medium))
-                        .foregroundStyle(isRecordingHotkey ? Color.accentColor : (hotkeyEnabled ? Color.primary : Color.secondary.opacity(0.4)))
-                        .padding(.horizontal, AppDesign.Spacing.md)
-                        .padding(.vertical, AppDesign.Spacing.xs)
+                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                        .tracking(1.5)
+                        .foregroundStyle(
+                            isRecordingHotkey
+                                ? Color.accentColor
+                                : Color.primary
+                        )
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AppDesign.Spacing.sm)
                         .background(
                             RoundedRectangle(cornerRadius: AppDesign.CornerRadius.sm + 2)
                                 .fill(isRecordingHotkey
                                     ? Color.accentColor.opacity(0.1)
-                                    : Color.secondary.opacity(hotkeyEnabled ? 0.12 : 0.05)
+                                    : Color.secondary.opacity(0.12)
                                 )
                         )
                         .overlay(
@@ -219,7 +343,7 @@ struct PreferencesView: View {
                         )
                 }
                 .buttonStyle(.plain)
-                .disabled(!hotkeyEnabled)
+                .focusable(false)
             }
         }
         .onDisappear { stopRecording() }
@@ -259,174 +383,35 @@ struct PreferencesView: View {
         }
     }
 
-    // MARK: - Version & Updates
+    // MARK: - Branded Divider
 
-    @State private var updater = SparkleUpdater.shared
-
-    private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
-    }
-
-    private var checkForUpdatesButton: some View {
-        VStack(alignment: .leading, spacing: AppDesign.Spacing.xs) {
-            HStack {
-                Text("Version \(appVersion)")
-                    .font(.subheadline)
-                Spacer()
-
-                switch updater.userDriver.status {
-                case .checking:
-                    ProgressView()
-                        .controlSize(.small)
-                        .scaleEffect(0.7)
-                default:
-                    Button("Check for Updates") {
-                        updater.checkForUpdates()
-                    }
-                    .font(.caption)
-                    .disabled(!updater.canCheckForUpdates)
-                }
+    private var brandedDivider: some View {
+        HStack(spacing: AppDesign.Spacing.sm) {
+            VStack { Divider() }
+            VStack(spacing: 3) {
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(AppDesign.Colors.accentRed)
+                    .frame(width: AppDesign.Icon.accentLineWidth, height: AppDesign.Icon.accentLineHeight + 0.5)
+                Image(systemName: "chevron.compact.down")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary.opacity(0.5))
             }
-
-            // Status row
-            switch updater.userDriver.status {
-            case .idle, .checking:
-                EmptyView()
-            case .latest:
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.green)
-                    Text("You're on the latest version")
-                        .font(.caption)
-                        .foregroundStyle(.green)
-                }
-            case let .error(msg):
-                HStack(spacing: 4) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.red)
-                    Text(msg)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-            case let .available(newVersion):
-                HStack(spacing: AppDesign.Spacing.sm) {
-                    Text("\(appVersion) → \(newVersion)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Button("Install") {
-                        updater.userDriver.pendingReply?(.install)
-                        updater.userDriver.pendingReply = nil
-                    }
-                    .font(.caption)
-                    Button("Skip") {
-                        updater.userDriver.pendingReply?(.skip)
-                        updater.userDriver.pendingReply = nil
-                        updater.userDriver.status = .idle
-                    }
-                    .font(.caption)
-                }
-            case .downloading:
-                HStack(spacing: 4) {
-                    ProgressView().controlSize(.small).scaleEffect(0.7)
-                    Text("Downloading…").font(.caption).foregroundStyle(.secondary)
-                }
-            case .extracting:
-                HStack(spacing: 4) {
-                    ProgressView().controlSize(.small).scaleEffect(0.7)
-                    Text("Installing…").font(.caption).foregroundStyle(.secondary)
-                }
-            case .readyToInstall:
-                Button("Install & Relaunch") {
-                    updater.userDriver.pendingInstallReply?(.install)
-                    updater.userDriver.pendingInstallReply = nil
-                }
-                .font(.caption)
-            }
+            VStack { Divider() }
         }
     }
 
+    // MARK: - Shared Components
 
-    // MARK: - Export Diagnostics
-
-    @State private var diagnosticState: DiagnosticState = .idle
-
-    enum DiagnosticState: Equatable {
-        case idle
-        case exporting
-        case exported(String)
-        case failed(String)
-    }
-
-    private var exportDiagnosticsButton: some View {
+    private func settingsRow<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Export Diagnostics")
-                    .font(.subheadline)
-                Text("Saves logs and settings to Desktop")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            switch diagnosticState {
-            case .idle:
-                Button("Export") { exportDiagnostics() }
-                    .font(.caption)
-            case .exporting:
-                ProgressView()
-                    .controlSize(.small)
-                    .scaleEffect(0.7)
-            case let .exported(path):
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                        .font(.system(size: 11))
-                    Button("Show in Finder") {
-                        NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
-                    }
-                    .font(.caption)
-                }
-            case let .failed(msg):
-                Text(msg)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
+            content()
         }
+        .font(.subheadline)
     }
 
-    private func exportDiagnostics() {
-        diagnosticState = .exporting
-        Task {
-            do {
-                let url = try await DiagnosticsExport.export()
-                await MainActor.run { diagnosticState = .exported(url.path) }
-                try? await Task.sleep(for: .seconds(10))
-                await MainActor.run {
-                    if case .exported = diagnosticState { diagnosticState = .idle }
-                }
-            } catch {
-                await MainActor.run { diagnosticState = .failed(error.localizedDescription) }
-            }
-        }
+    private var cardDivider: some View {
+        Divider()
     }
-
-    // MARK: - Launch at Login
-
-    private var launchAtLoginToggle: some View {
-        VStack(alignment: .leading) {
-            Toggle(
-                "Launch at login",
-                isOn: $store.launchAtLogin.sending(\.setLaunchAtLogin)
-            )
-            .font(.subheadline)
-
-            if let error = store.launchAtLoginError {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
-        }
-    }
-
 }

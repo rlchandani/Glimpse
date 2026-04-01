@@ -1,7 +1,7 @@
 import AppKit
 
 enum DateIconRenderer {
-    static func render() -> NSImage {
+    static func render(textColor: NSColor = .labelColor) -> NSImage {
         let iconSize = AppDesign.Icon.menuBarSize
         let size = NSSize(width: iconSize, height: iconSize)
         let image = NSImage(size: size, flipped: false) { rect in
@@ -11,7 +11,7 @@ enum DateIconRenderer {
             let fontSize: CGFloat = day < 10 ? 12 : 11
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: NSFont.systemFont(ofSize: fontSize, weight: .bold),
-                .foregroundColor: NSColor.labelColor,
+                .foregroundColor: textColor,
             ]
 
             let textSize = dayString.size(withAttributes: attributes)

@@ -5,7 +5,7 @@ final class StatusItemView: NSView {
     private let iconView = NSImageView()
     private let separatorView = NSView()
     private let textLabel = NSTextField(labelWithString: "")
-    private let borderLayer = CALayer()
+    private var isFilled = false
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -17,13 +17,6 @@ final class StatusItemView: NSView {
 
     private func setupViews() {
         wantsLayer = true
-
-        borderLayer.name = "border"
-        borderLayer.cornerRadius = AppDesign.StatusItem.borderCornerRadius
-        borderLayer.borderWidth = AppDesign.StatusItem.borderWidth
-        borderLayer.borderColor = AppDesign.Colors.menuBarBorder
-            .withAlphaComponent(AppDesign.StatusItem.borderOpacity).cgColor
-        layer?.addSublayer(borderLayer)
 
         iconView.translatesAutoresizingMaskIntoConstraints = false
         iconView.imageScaling = .scaleProportionallyDown
@@ -47,15 +40,25 @@ final class StatusItemView: NSView {
         setAccessibilityRole(.button)
     }
 
-    func update(icon: NSImage?, text: String, showIcon: Bool) {
+    func update(icon: NSImage?, text: String, showIcon: Bool, filled: Bool = false) {
         let hasText = !text.isEmpty
         let padding = AppDesign.StatusItem.padding
         let innerPadding = AppDesign.StatusItem.innerPadding
         let iconSize = AppDesign.Icon.menuBarSize
 
+        isFilled = filled
+
+        let isDark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        textLabel.textColor = filled
+            ? NSColor(white: 0.1, alpha: 1.0)
+            : AppDesign.Colors.menuBarText
+        iconView.contentTintColor = filled
+            ? NSColor(white: 0.1, alpha: 1.0)
+            : (isDark ? .white : AppDesign.Colors.menuBarText)
+
         iconView.image = icon
         iconView.isHidden = !showIcon
-        separatorView.isHidden = !showIcon || !hasText
+        separatorView.isHidden = !showIcon || !hasText || filled
         textLabel.stringValue = text
         textLabel.isHidden = !hasText
 
@@ -83,7 +86,10 @@ final class StatusItemView: NSView {
                 separatorView.widthAnchor.constraint(equalToConstant: 1),
 
                 textLabel.leadingAnchor.constraint(
-                    equalTo: separatorView.trailingAnchor, constant: innerPadding
+                    equalTo: filled
+                        ? iconView.trailingAnchor
+                        : separatorView.trailingAnchor,
+                    constant: innerPadding
                 ),
                 textLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
                 textLabel.trailingAnchor.constraint(
@@ -113,21 +119,55 @@ final class StatusItemView: NSView {
         }
 
         NSLayoutConstraint.activate(viewConstraints)
-        needsLayout = true
 
         textLabel.sizeToFit()
         var width = padding * 2
         if showIcon { width += iconSize }
-        if showIcon && hasText { width += innerPadding * 2 + 1 }
+        if showIcon && hasText {
+            width += filled ? innerPadding : (innerPadding * 2 + 1)
+        }
         if hasText { width += textLabel.frame.width }
         frame.size.width = ceil(width)
+
+        needsDisplay = true
 
         setAccessibilityValue(text.isEmpty ? "Calendar" : text)
     }
 
-    override func layout() {
-        super.layout()
-        borderLayer.frame = bounds.insetBy(dx: 1, dy: 1)
+    override func draw(_ dirtyRect: NSRect) {
+        let rect = bounds.insetBy(dx: 1, dy: 1)
+        let path = NSBezierPath(
+            roundedRect: rect,
+            xRadius: AppDesign.StatusItem.borderCornerRadius,
+            yRadius: AppDesign.StatusItem.borderCornerRadius
+        )
+
+        if isFilled {
+            let isDark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            let fillColor = isDark
+                ? NSColor(white: 0.85, alpha: 1.0)
+                : NSColor(white: 0.92, alpha: 1.0)
+            fillColor.setFill()
+            path.fill()
+
+            let borderColor = isDark
+                ? NSColor(white: 0.65, alpha: 1.0)
+                : NSColor(white: 0.78, alpha: 1.0)
+            borderColor.setStroke()
+            path.lineWidth = AppDesign.StatusItem.borderWidth
+            path.stroke()
+        } else {
+            AppDesign.Colors.menuBarBorder
+                .withAlphaComponent(AppDesign.StatusItem.borderOpacity)
+                .setStroke()
+            path.lineWidth = AppDesign.StatusItem.borderWidth
+            path.stroke()
+        }
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        needsDisplay = true
     }
 
     override var intrinsicContentSize: NSSize {

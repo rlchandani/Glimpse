@@ -222,4 +222,22 @@ struct PreferencesFeatureTests {
     }
 
 
+
+
+    @Test
+    func setShowFilledBackground_savesAndNotifies() async {
+        let store = TestStore(
+            initialState: PreferencesFeature.State()
+        ) {
+            PreferencesFeature()
+        } withDependencies: {
+            $0.preferencesClient.saveDisplayOptions = { _ in }
+        }
+
+        await store.send(.setShowFilledBackground(true)) {
+            $0.displayOptions.showFilledBackground = true
+        }
+
+        await store.receive(\.delegate.displayOptionsChanged)
+    }
 }

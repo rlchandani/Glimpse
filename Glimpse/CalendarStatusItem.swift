@@ -2,12 +2,19 @@ import AppKit
 import Carbon
 import GlimpseCore
 
+extension Notification.Name {
+    static let menuBarDisplayDidChange = Notification.Name("menuBarDisplayDidChange")
+    static let calendarPreferencesDidChange = Notification.Name("calendarPreferencesDidChange")
+    static let aiSearchSettingDidChange = Notification.Name("aiSearchSettingDidChange")
+}
+
 @MainActor
 final class CalendarStatusItem {
     private var statusItem: NSStatusItem?
     private var statusItemView: StatusItemView?
     private var panel: CalendarPanel?
     private var midnightTimer: Timer?
+    private var displayChangeObserver: Any?
     private let preferencesClient = PreferencesClient.liveValue
     private let calendarClient = CalendarClient.liveValue
 
@@ -25,7 +32,20 @@ final class CalendarStatusItem {
         updateMenuBarDisplay()
         scheduleMidnightRefresh()
         registerGlobalHotkey()
+        observeDisplayChanges()
         AppLogger.statusItem.info("Status item configured")
+    }
+
+    private func observeDisplayChanges() {
+        displayChangeObserver = NotificationCenter.default.addObserver(
+            forName: .menuBarDisplayDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.updateMenuBarDisplay()
+            }
+        }
     }
 
     private func registerGlobalHotkey() {
@@ -50,11 +70,14 @@ final class CalendarStatusItem {
         else { return }
 
         let options = preferencesClient.loadDisplayOptions()
-        let icon = DateIconRenderer.render()
+        let iconTextColor: NSColor = options.showFilledBackground
+            ? NSColor(white: 0.1, alpha: 1.0)
+            : .labelColor
+        let icon = DateIconRenderer.render(textColor: iconTextColor)
         let dateString = calendarClient.menuBarDateString(Date(), options)
         let showIcon = options.showIcon || dateString.isEmpty
 
-        view.update(icon: icon, text: dateString, showIcon: showIcon)
+        view.update(icon: icon, text: dateString, showIcon: showIcon, filled: options.showFilledBackground)
 
         button.frame.size = view.frame.size
         statusItem?.length = view.frame.width
@@ -172,5 +195,6 @@ final class CalendarStatusItem {
 
         panel?.setFrame(contentRect, display: true)
         panel?.makeKeyAndOrderFront(nil)
+        panel?.collapsePreferencesIfNeeded()
     }
 }

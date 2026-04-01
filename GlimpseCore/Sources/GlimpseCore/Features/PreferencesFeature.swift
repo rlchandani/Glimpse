@@ -28,6 +28,7 @@ public struct PreferencesFeature: Sendable {
         case setShowMonth(Bool)
         case setShowDate(Bool)
         case setShowYear(Bool)
+        case setShowFilledBackground(Bool)
         case setLaunchAtLogin(Bool)
         case launchAtLoginSucceeded
         case launchAtLoginFailed(String)
@@ -57,7 +58,6 @@ public struct PreferencesFeature: Sendable {
                 state.launchAtLogin = launchAtLoginClient.isEnabled()
                 state.showAISearch = preferencesClient.loadShowAISearch()
                 state.aiProvider = preferencesClient.loadAIProvider()
-                // Check flag only — don't read Keychain on every open (triggers password prompt with ad-hoc signing)
                 return .none
 
             case let .setShowAISearch(enabled):
@@ -106,6 +106,11 @@ public struct PreferencesFeature: Sendable {
 
             case let .setShowYear(value):
                 state.displayOptions.showYear = value
+                preferencesClient.saveDisplayOptions(state.displayOptions)
+                return .send(.delegate(.displayOptionsChanged(state.displayOptions)))
+
+            case let .setShowFilledBackground(value):
+                state.displayOptions.showFilledBackground = value
                 preferencesClient.saveDisplayOptions(state.displayOptions)
                 return .send(.delegate(.displayOptionsChanged(state.displayOptions)))
 

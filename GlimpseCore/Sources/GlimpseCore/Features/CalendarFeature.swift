@@ -63,6 +63,7 @@ public struct CalendarFeature: Sendable {
         case calendarAccessResult(Bool)
         case eventsLoaded([CalendarEvent])
         case aiDateResult(Date?)
+        case reloadPreferences
     }
 
     @Dependency(\.date) var date
@@ -185,6 +186,12 @@ public struct CalendarFeature: Sendable {
 
             case let .eventsLoaded(events):
                 state.todayEvents = events
+                return .none
+
+            case .reloadPreferences:
+                state.startOfWeekday = preferencesClient.loadStartOfWeekday()
+                state.workdays = preferencesClient.loadWorkdays()
+                recomputeDays(&state)
                 return .none
 
             case let .aiDateResult(date):

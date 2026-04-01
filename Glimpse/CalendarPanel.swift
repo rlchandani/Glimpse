@@ -12,8 +12,13 @@ final class CalendarPanel: NSPanel {
     var caretXOffset: CGFloat = 0
     var isPinned = false
     private var previousApp: NSRunningApplication?
+    private let calendarStore: StoreOf<CalendarFeature>
 
     init(contentRect: NSRect, caretOffset: CGFloat) {
+        let store = Store(initialState: CalendarFeature.State()) {
+            CalendarFeature()
+        }
+        self.calendarStore = store
         self.caretXOffset = caretOffset
         super.init(
             contentRect: contentRect,
@@ -31,9 +36,6 @@ final class CalendarPanel: NSPanel {
         collectionBehavior = [.moveToActiveSpace]
         animationBehavior = .utilityWindow
 
-        let store = Store(initialState: CalendarFeature.State()) {
-            CalendarFeature()
-        }
         let popoverView = CalendarPopoverView(store: store, panel: self)
         let hostingView = NSHostingView(rootView: popoverView)
         hostingView.frame = contentRect
@@ -42,6 +44,17 @@ final class CalendarPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    /// Reset UI state when panel is re-shown
+    func collapsePreferencesIfNeeded() {
+        if calendarStore.showingPreferences {
+            calendarStore.send(.togglePreferences)
+        }
+        // Reload preferences in case they changed while panel was hidden
+        calendarStore.send(.reloadPreferences)
+        // Refresh local @State (showAISearch) without triggering another reloadPreferences
+        NotificationCenter.default.post(name: .aiSearchSettingDidChange, object: nil)
+    }
 
     /// Activate the app so TextField can receive focus
     func activateForTextInput() {

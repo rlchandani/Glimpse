@@ -12,14 +12,24 @@ A lightweight macOS menu bar calendar app. Click the date icon to see the curren
 
 - **Menu bar popover** with month grid, week numbers, and contoured month border
 - **Date selection** — click any day to see full date info and week number
-- **AI date search** — press ⌘G and type "next Friday" or "Christmas" (macOS 26+, on-device)
+- **AI date search** — press ⌘G and type "next Friday" or "Christmas"
 - **Today's events** — EventKit integration shows calendar events in the popover
-- **Global hotkey** — configurable shortcut (default ⌘⇧C) to toggle the calendar from anywhere
+- **Global hotkey** — configurable shortcut (default ⌘⇧C) to toggle from anywhere
 - **Customizable menu bar** — toggle icon, day, month, date, year with live preview
+- **Filled background mode** — solid pill style for the menu bar item
 - **Workday highlighting** — configure which days are workdays
 - **Pin window** — keep the calendar visible while working
+- **Grouped preferences** — Display, Calendar, Features cards with branded divider
+- **Auto-updates** — Sparkle with inline status in About window
 - **Shortcuts.app** — "Show Glimpse Calendar" available via Siri and Shortcuts
 - **Launch at login** — via macOS SMAppService
+
+## Setup
+
+1. Download the latest release from [GitHub Releases](https://github.com/rlchandani/Glimpse/releases/latest)
+2. Move `Glimpse.app` to `/Applications`
+3. Launch — the date icon appears in the menu bar
+4. Click it to see the calendar, click the gear icon for preferences
 
 ## Architecture
 
@@ -36,34 +46,50 @@ Built with [The Composable Architecture](https://github.com/pointfreeco/swift-co
 ## Requirements
 
 - macOS 14.0 (Sonoma) or later
-- macOS 26.0 (Tahoe) for AI date search
+- macOS 26.0 (Tahoe) for on-device AI date search
 - Xcode 16+
 - Swift 6.0
 
-## Build
+## Development
+
+### Building
 
 ```bash
+# Command line
 xcodebuild -project Glimpse.xcodeproj -scheme Glimpse -configuration Release -skipMacroValidation build
+
+# Xcode GUI
+# Open Glimpse.xcodeproj → Trust & Enable macro plugins when prompted → Build
 ```
 
-> **Note:** `-skipMacroValidation` is required for TCA macro plugins. When building in Xcode GUI for the first time, click "Trust & Enable" when prompted for macro plugins.
+> `-skipMacroValidation` is required for TCA macro plugins.
 
 The built app is at:
 ```
 ~/Library/Developer/Xcode/DerivedData/Glimpse-*/Build/Products/Release/Glimpse.app
 ```
 
-## Test
+### Testing
 
 ```bash
 # App tests (18 tests)
 xcodebuild -project Glimpse.xcodeproj -scheme Glimpse -skipMacroValidation test
 
-# GlimpseCore tests (29 TCA TestStore tests)
+# GlimpseCore tests (30 TCA TestStore tests)
 cd GlimpseCore && swift test
 ```
 
-47 tests total. All use Swift Testing (`@Test`, `#expect`) — no XCTest.
+48 tests total. All use Swift Testing (`@Test`, `#expect`) — no XCTest.
+
+### Code Signing (Local)
+
+Ad-hoc signing for local development (Sparkle framework needs re-signing):
+
+```bash
+find Glimpse.app/Contents/Frameworks -name "*.framework" -exec codesign --force --sign - --timestamp {} \;
+codesign --force --sign - --timestamp --deep Glimpse.app
+open Glimpse.app
+```
 
 ## Project Structure
 
@@ -72,17 +98,22 @@ Glimpse/                             # App target
 ├── GlimpseApp.swift                 # @main entry, AppDelegate
 ├── CalendarPanel.swift              # NSPanel (non-activating, pin, text input)
 ├── CalendarStatusItem.swift         # NSStatusItem, positioning, midnight refresh
-├── StatusItemView.swift             # Bordered menu bar view (icon | text)
+├── StatusItemView.swift             # Menu bar rendering (bordered/filled)
+├── StatusItemPreview.swift          # NSViewRepresentable for preferences preview
 ├── CalendarPopoverView.swift        # SwiftUI calendar, date selection, AI field
-├── PreferencesView.swift            # Preferences with key recorder
+├── PreferencesView.swift            # Grouped cards preferences (Display/Calendar/Features)
 ├── MonthBorderShape.swift           # Contoured month border (SwiftUI Shape)
 ├── DateIconRenderer.swift           # Date number + red accent menu bar icon
 ├── GlobalHotkey.swift               # Carbon EventHotKey, configurable combo
 ├── AppIntents.swift                 # Shortcuts.app integration
-├── AIDateHelper.swift               # FoundationModels date parsing (macOS 26+)
+├── AIDateHelper.swift               # AI date parsing (proxy + FoundationModels)
+├── ProxyProvider.swift              # Auris proxy API integration
+├── ProxyConfig.swift                # XOR-obfuscated auth
+├── SparkleUpdater.swift             # Inline update UI with SPUUserDriver
+├── AboutWindow.swift                # Version, updates, diagnostics
 ├── AppDesign.swift                  # Design tokens
 ├── AppLogger.swift                  # os.Logger categories
-├── PrivacyInfo.xcprivacy            # Privacy manifest
+├── PrivacyInfo.xcprivacy
 ├── Info.plist
 ├── Glimpse.entitlements
 └── Assets.xcassets/
@@ -94,8 +125,8 @@ GlimpseCore/                         # Local Swift Package (business logic)
 │   ├── Features/                    # CalendarFeature, PreferencesFeature,
 │   │                                # MenuBarFeature
 │   └── Models/                      # CalendarDay, CalendarEvent, GridInfo,
-│                                    # MenuBarDisplayOptions
-└── Tests/GlimpseCoreTests/          # 29 TCA TestStore tests
+│                                    # MenuBarDisplayOptions, AIProvider
+└── Tests/GlimpseCoreTests/          # 30 TCA TestStore tests
 
 GlimpseTests/                        # 18 app-level tests
 ```
@@ -113,11 +144,30 @@ GlimpseTests/                        # 18 app-level tests
 
 ## Permissions
 
-| Permission | Why |
-|---|---|
-| **Calendar** | Show today's events (EventKit) |
+| Permission | Why | When Requested |
+|---|---|---|
+| **Calendar** | Show today's events (EventKit) | Click "Show today's events" |
 
-The app requests calendar access when you click "Show today's events" in the popover. No other permissions are required.
+No other permissions required. The app runs as a menu bar accessory (no dock icon).
+
+## Releasing
+
+### GitHub Actions (Automated)
+
+Push to `main` with a version bump triggers the release workflow:
+1. Checks version against latest git tag
+2. Runs all tests
+3. Archives and exports with Developer ID signing
+4. Creates GitHub Release with ZIP
+
+### Required Secrets
+
+| Secret | Purpose |
+|---|---|
+| `MACOS_CERTIFICATE` | Base64 Developer ID .p12 |
+| `MACOS_CERTIFICATE_PWD` | .p12 password |
+| `SPARKLE_PRIVATE_KEY` | EdDSA key for Sparkle signing |
+| `DEVELOPMENT_TEAM` | Apple Team ID |
 
 ## License
 
