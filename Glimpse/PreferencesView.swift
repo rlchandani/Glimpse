@@ -309,24 +309,92 @@ struct PreferencesView: View {
         }
     }
 
-    // MARK: - Check for Updates
+    // MARK: - Version & Updates
+
+    @State private var updater = SparkleUpdater.shared
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+    }
 
     private var checkForUpdatesButton: some View {
-        Button {
-            if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
-                appDelegate.sparkleUpdater.checkForUpdates()
-            }
-        } label: {
+        VStack(alignment: .leading, spacing: AppDesign.Spacing.xs) {
             HStack {
-                Text("Check for updates")
+                Text("Version \(appVersion)")
                     .font(.subheadline)
                 Spacer()
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+
+                switch updater.userDriver.status {
+                case .checking:
+                    ProgressView()
+                        .controlSize(.small)
+                        .scaleEffect(0.7)
+                default:
+                    Button("Check for Updates") {
+                        updater.checkForUpdates()
+                    }
+                    .font(.caption)
+                    .disabled(!updater.canCheckForUpdates)
+                }
+            }
+
+            // Status row
+            switch updater.userDriver.status {
+            case .idle, .checking:
+                EmptyView()
+            case .latest:
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.green)
+                    Text("You're on the latest version")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                }
+            case let .error(msg):
+                HStack(spacing: 4) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.red)
+                    Text(msg)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            case let .available(newVersion):
+                HStack(spacing: AppDesign.Spacing.sm) {
+                    Text("\(appVersion) → \(newVersion)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Install") {
+                        updater.userDriver.pendingReply?(.install)
+                        updater.userDriver.pendingReply = nil
+                    }
+                    .font(.caption)
+                    Button("Skip") {
+                        updater.userDriver.pendingReply?(.skip)
+                        updater.userDriver.pendingReply = nil
+                        updater.userDriver.status = .idle
+                    }
+                    .font(.caption)
+                }
+            case .downloading:
+                HStack(spacing: 4) {
+                    ProgressView().controlSize(.small).scaleEffect(0.7)
+                    Text("Downloading…").font(.caption).foregroundStyle(.secondary)
+                }
+            case .extracting:
+                HStack(spacing: 4) {
+                    ProgressView().controlSize(.small).scaleEffect(0.7)
+                    Text("Installing…").font(.caption).foregroundStyle(.secondary)
+                }
+            case .readyToInstall:
+                Button("Install & Relaunch") {
+                    updater.userDriver.pendingInstallReply?(.install)
+                    updater.userDriver.pendingInstallReply = nil
+                }
+                .font(.caption)
             }
         }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Launch at Login
