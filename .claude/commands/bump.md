@@ -27,3 +27,4 @@ Steps:
 Important:
 - Build number MUST always increment (Sparkle uses it for update ordering)
 - MARKETING_VERSION and CURRENT_PROJECT_VERSION each appear 4 times in project.pbxproj — update ALL of them
+- Version bump MUST be included in the same commit as the feature/fix — never a separate commit. This keeps git log readable and ties the version to the change that triggered it.
