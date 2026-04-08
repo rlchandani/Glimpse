@@ -1,6 +1,6 @@
 # Glimpse
 
-[![Version](https://img.shields.io/badge/version-1.4.0-green)](https://github.com/rlchandani/Glimpse/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.4.1-green)](https://github.com/rlchandani/Glimpse/releases/latest)
 [![Download](https://img.shields.io/badge/download-DMG-brightgreen)](https://github.com/rlchandani/Glimpse/releases/latest)
 
 [![Release](https://github.com/rlchandani/Glimpse/actions/workflows/release.yml/badge.svg)](https://github.com/rlchandani/Glimpse/actions/workflows/release.yml)
