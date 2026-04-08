@@ -91,6 +91,7 @@ private struct AboutView: View {
                         NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
                     }
                     .buttonStyle(.plain)
+                    .focusable(false)
                     .font(.caption)
                     .foregroundStyle(.green)
                 case let .failed(msg):
@@ -102,6 +103,7 @@ private struct AboutView: View {
                 Link("github.com/rlchandani/Glimpse",
                      destination: URL(string: "https://github.com/rlchandani/Glimpse")!)
                     .font(.caption)
+                    .focusable(false)
                 Text("MIT License")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
@@ -173,6 +175,7 @@ private struct AboutView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.accentColor)
                     .buttonStyle(.plain)
+                    .focusable(false)
 
                     Button("Skip") {
                         updater.userDriver.pendingReply?(.skip)
@@ -182,6 +185,7 @@ private struct AboutView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .buttonStyle(.plain)
+                    .focusable(false)
                 }
             }
 
@@ -209,6 +213,7 @@ private struct AboutView: View {
             .font(.caption.weight(.semibold))
             .foregroundStyle(Color.accentColor)
             .buttonStyle(.plain)
+            .focusable(false)
         }
     }
 
