@@ -33,7 +33,7 @@ jobs:
   test:
     needs: check-version
     if: needs.check-version.outputs.should_release == 'true'
-    runs-on: macos-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v5
 
@@ -54,7 +54,7 @@ jobs:
   build:
     needs: [check-version, test]
     if: needs.check-version.outputs.should_release == 'true'
-    runs-on: macos-latest
+    runs-on: self-hosted
     permissions:
       contents: write
     env:
@@ -71,6 +71,9 @@ jobs:
           CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
           KEYCHAIN_PATH=$RUNNER_TEMP/glimpse-signing.keychain-db
           KEYCHAIN_PWD=$(openssl rand -hex 16)
+
+          # Save original keychain search list for restore in cleanup
+          security list-keychains -d user | tr -d '"' | tr '\n' ' ' > "$RUNNER_TEMP/original-keychains.txt"
 
           # Download Apple CA certificates (required for complete trust chain)
           curl -sL "https://www.apple.com/appleca/AppleIncRootCertificate.cer" -o "$RUNNER_TEMP/AppleRoot.cer"
@@ -217,6 +220,13 @@ jobs:
             --title "v${VERSION}" \
             --generate-notes
 
-      - name: Clean up keychain
+      - name: Clean up
         if: always()
-        run: security delete-keychain $RUNNER_TEMP/glimpse-signing.keychain-db 2>/dev/null || true
+        run: |
+          security delete-keychain $RUNNER_TEMP/glimpse-signing.keychain-db 2>/dev/null || true
+          # Restore original keychain search list
+          if [ -f "$RUNNER_TEMP/original-keychains.txt" ]; then
+            security list-keychains -d user -s $(cat "$RUNNER_TEMP/original-keychains.txt")
+          else
+            security list-keychains -d user -s ~/Library/Keychains/login.keychain-db /Library/Keychains/System.keychain
+          fi
