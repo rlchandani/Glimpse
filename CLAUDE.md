@@ -1,8 +1,22 @@
 # Glimpse — Dev Notes for Agents
 
+This file provides guidance for coding agents working in this repo.
+
 ## Code Review Requirements
 
-Before any commit, run `/review` to apply the full pre-production checklist from `.claude/rules/pre-production-review.md`. All rule files in `.claude/rules/` must be checked.
+**When asked to do a code review, ALWAYS follow the checklist in `.claude/rules/pre-production-review.md`.** This is not optional. Run through every applicable section (A1–A8) against the changed files. Report findings by section number. Key sections:
+- A1–A6: Glimpse-specific (permissions, panel, hotkey, Sparkle, AI, preferences)
+- A7: Code quality — dead code, hack detection, complexity, consistency, performance, security
+- A8: Test coverage — every new function, bug fix, and model needs tests
+
+Also check the rules in `.claude/rules/` for:
+- `glimpsecore.md` — GlimpseCore package rules (Sendable, no AppKit, logging)
+- `clients.md` — Dependency client rules (closures, error handling, UserDefaults)
+- `tca-features.md` — TCA reducer rules (state capture, effects, delegate actions)
+- `swiftui-views.md` — SwiftUI view rules (Store binding, AppDesign tokens)
+- `gotchas.md` — Hard-won debugging insights to avoid repeating mistakes
+- `known-issues.md` — Deferred items (don't fix unless asked)
+- `versioning.md` — Version sync rules (3 locations)
 
 ## Project Overview
 
@@ -24,6 +38,9 @@ cd GlimpseCore && swift test
 find Glimpse.app/Contents/Frameworks -name "*.framework" -exec codesign --force --sign - --timestamp {} \;
 codesign --force --sign - --timestamp --deep Glimpse.app
 open Glimpse.app
+
+# Open in Xcode (recommended for development)
+open Glimpse.xcodeproj
 ```
 
 ## Architecture
@@ -91,19 +108,72 @@ Uses shared Auris proxy at `proxy.auris.workers.dev/refine`. App secret is XOR-o
 
 ## Release Infrastructure
 
-- **Sparkle 2.x** for auto-updates with EdDSA signing
-- **InlineUpdateDriver** (custom SPUUserDriver) for in-app update status
-- **GitHub Actions** (`release.yml`) builds on push to main when version changes
-- **DMG** created via xcodebuild archive + export
+### Sparkle Auto-Updates via GitHub Releases
 
-## Secrets (GitHub)
+- **Feed URL** (in Info.plist): `https://github.com/rlchandani/Glimpse/releases/latest/download/appcast.xml`
+- **Sparkle EdDSA public key** (in Info.plist): `r3bpqxl5pEGWf6atYS0ZWP3FZyTVVcFAfDj22fuCioE=`
+- **Distribution**: DMG + appcast.xml attached to each GitHub Release
+
+### Release Pipelines
+
+**GitHub Actions (primary — triggered on push to main):**
+- `.github/workflows/release.yml`
+- Builds → styled DMG → notarize → Sparkle sign → appcast → GitHub Release
+- Secrets: `MACOS_CERTIFICATE`, `MACOS_CERTIFICATE_PWD`, `SPARKLE_PRIVATE_KEY`, `APPLE_ID`, `APPLE_ID_PASSWORD`, `TEAM_ID`
+
+**Local (backup):**
+- `./tools/scripts/preflight.sh` — Checks all prerequisites (`--setup` for interactive guided setup)
+- `./tools/scripts/release-upload.sh` — Builds, signs, creates DMG, generates appcast locally
+- If Developer ID available: adds notarization + clean DMG background. If not: Sparkle EdDSA only.
+
+### DMG Layout
+
+- Icon positions: Glimpse app at (150, 190), Applications at (450, 190)
+- Window size: 600×400
+- Optional: `tools/resources/AppIcon.icns` for custom DMG volume icon
+
+### GitHub Actions Secrets
 
 | Secret | Purpose |
 |---|---|
-| `MACOS_CERTIFICATE` | Base64 Developer ID .p12 |
-| `MACOS_CERTIFICATE_PWD` | .p12 password |
-| `SPARKLE_PRIVATE_KEY` | EdDSA key for Sparkle signing |
-| `DEVELOPMENT_TEAM` | Apple Team ID (5D7M37QQLU) |
+| `MACOS_CERTIFICATE` | Developer ID .p12 (base64-encoded) |
+| `MACOS_CERTIFICATE_PWD` | Password for .p12 |
+| `SPARKLE_PRIVATE_KEY` | EdDSA signing for Sparkle updates |
+| `APPLE_ID` | Notarization |
+| `APPLE_ID_PASSWORD` | Notarization (app-specific password) |
+| `TEAM_ID` | Notarization |
+
+### Machine Setup (Local Releases)
+
+| Secret | Scope | Setup |
+|---|---|---|
+| Developer ID cert | Optional, same across machines | Xcode → Accounts → Manage Certificates |
+| Notarization creds | Optional, re-enter per machine | `xcrun notarytool store-credentials "AC_PASSWORD"` |
+| Sparkle EdDSA key | Only needed for local releases | Import: `generate_keys --import KEY` |
+
+The Sparkle private key in GitHub Secrets is the source of truth for distribution. Local machines don't need it unless doing local releases. Never run `generate_keys` without `--import` — it creates a new key that breaks updates for existing users.
+
+## Version Bumping
+
+**Before pushing any user-facing change**, bump the version. This triggers the GitHub Actions release workflow.
+
+A "user-facing change" is any feature, bug fix, performance improvement, or UX change — anything that ships to users. Internal-only changes (CI config, docs, dev tooling) do not require a bump.
+
+Update the version in **all 3 locations** (missing any will cause release issues). Use `/bump` to automate this:
+
+1. `Glimpse.xcodeproj/project.pbxproj` → `MARKETING_VERSION` (4 occurrences: Debug/Release × App/Tests)
+2. `Glimpse.xcodeproj/project.pbxproj` → `CURRENT_PROJECT_VERSION` (4 occurrences)
+3. `README.md` → version badge `[![Version](https://img.shields.io/badge/version-X.Y.Z-green)]`
+
+Build number (`CURRENT_PROJECT_VERSION`) is critical. Sparkle uses it (not marketing version) to determine update ordering. If the build number doesn't increase, users won't see the update. Always increment it.
+
+Commit with: `chore: bump version to X.Y.Z`
+
+Quick reference for the current version and build:
+```bash
+grep 'MARKETING_VERSION' Glimpse.xcodeproj/project.pbxproj | head -1 | sed 's/[^0-9.]//g'
+grep 'CURRENT_PROJECT_VERSION' Glimpse.xcodeproj/project.pbxproj | head -1 | sed 's/[^0-9]//g'
+```
 
 ## Testing Rules
 
@@ -113,11 +183,13 @@ Uses shared Auris proxy at `proxy.auris.workers.dev/refine`. App secret is XOR-o
 - Provide `$0.eventKitClient.authorizationStatus = { .notDetermined }` for CalendarFeature tests
 - Avoid `Result<Void, Error>` in TCA actions — causes Swift compiler crashes
 
-## Git Commit Guidelines
+## Git Commit Messages
 
+- Use a concise, descriptive subject line that captures the user-facing impact (roughly 50–70 characters).
+- Follow up with as much context as needed in the body. Include the rationale, notable tradeoffs, relevant logs, or reproduction steps.
+- Reference any related GitHub issues in the body if the change tracks ongoing work.
+- **Do NOT include `Co-Authored-By` trailers** in commit messages.
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `test:`, `chore:`
-- No AI/Claude attribution in commits or code
-- No `Co-Authored-By` lines
 
 ## File Counts
 

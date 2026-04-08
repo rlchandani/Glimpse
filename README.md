@@ -1,8 +1,10 @@
 # Glimpse
 
+[![Version](https://img.shields.io/badge/version-1.3.0-green)](https://github.com/rlchandani/Glimpse/releases/latest)
+[![Download](https://img.shields.io/badge/download-DMG-brightgreen)](https://github.com/rlchandani/Glimpse/releases/latest)
+
 [![Release](https://github.com/rlchandani/Glimpse/actions/workflows/release.yml/badge.svg)](https://github.com/rlchandani/Glimpse/actions/workflows/release.yml)
-[![Download](https://img.shields.io/github/v/release/rlchandani/Glimpse?label=Download&sort=semver)](https://github.com/rlchandani/Glimpse/releases/latest)
-[![License](https://img.shields.io/github/license/rlchandani/Glimpse)](https://github.com/rlchandani/Glimpse/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/rlchandani/Glimpse/blob/main/LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-blue)]()
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange)]()
 
@@ -45,7 +47,7 @@ Built with [The Composable Architecture](https://github.com/pointfreeco/swift-co
 
 ## Requirements
 
-- macOS 14.0 (Sonoma) or later
+- macOS 14.0 (Sonoma) or later, Apple Silicon
 - macOS 26.0 (Tahoe) for on-device AI date search
 - Xcode 16+
 - Swift 6.0
@@ -54,20 +56,19 @@ Built with [The Composable Architecture](https://github.com/pointfreeco/swift-co
 
 ### Building
 
-```bash
-# Command line
-xcodebuild -project Glimpse.xcodeproj -scheme Glimpse -configuration Release -skipMacroValidation build
+Open in Xcode (recommended):
 
-# Xcode GUI
-# Open Glimpse.xcodeproj → Trust & Enable macro plugins when prompted → Build
+```bash
+open Glimpse.xcodeproj
+```
+
+Or build from the command line:
+
+```bash
+xcodebuild -project Glimpse.xcodeproj -scheme Glimpse -configuration Release -skipMacroValidation build
 ```
 
 > `-skipMacroValidation` is required for TCA macro plugins.
-
-The built app is at:
-```
-~/Library/Developer/Xcode/DerivedData/Glimpse-*/Build/Products/Release/Glimpse.app
-```
 
 ### Testing
 
@@ -75,21 +76,17 @@ The built app is at:
 # App tests (18 tests)
 xcodebuild -project Glimpse.xcodeproj -scheme Glimpse -skipMacroValidation test
 
-# GlimpseCore tests (30 TCA TestStore tests)
+# GlimpseCore tests (32 TCA TestStore tests)
 cd GlimpseCore && swift test
 ```
 
-48 tests total. All use Swift Testing (`@Test`, `#expect`) — no XCTest.
+50 tests total (18 app + 32 GlimpseCore). All use Swift Testing (`@Test`, `#expect`) — no XCTest.
 
-### Code Signing (Local)
+### Code Signing
 
-Ad-hoc signing for local development (Sparkle framework needs re-signing):
+The project uses `CODE_SIGN_STYLE = Automatic`. Debug builds sign with "Apple Development" — make sure you have a valid Apple Development certificate in your keychain and your team is selected in Xcode's Signing & Capabilities tab.
 
-```bash
-find Glimpse.app/Contents/Frameworks -name "*.framework" -exec codesign --force --sign - --timestamp {} \;
-codesign --force --sign - --timestamp --deep Glimpse.app
-open Glimpse.app
-```
+> **Tip:** If you get repeated permission prompts during debug, ensure the signing identity is "Apple Development" so TCC entries persist across builds.
 
 ## Project Structure
 
@@ -126,9 +123,16 @@ GlimpseCore/                         # Local Swift Package (business logic)
 │   │                                # MenuBarFeature
 │   └── Models/                      # CalendarDay, CalendarEvent, GridInfo,
 │                                    # MenuBarDisplayOptions, AIProvider
-└── Tests/GlimpseCoreTests/          # 30 TCA TestStore tests
+└── Tests/GlimpseCoreTests/          # 32 TCA TestStore tests
 
 GlimpseTests/                        # 18 app-level tests
+
+tools/
+├── scripts/
+│   ├── preflight.sh                 # Machine readiness check (--setup for interactive guided setup)
+│   └── release-upload.sh            # Build → sign → notarize → create DMG
+└── resources/
+    └── AppIcon.icns                 # App icon for DMG volume icon
 ```
 
 ## Keyboard Shortcuts
@@ -152,22 +156,153 @@ No other permissions required. The app runs as a menu bar accessory (no dock ico
 
 ## Releasing
 
-### GitHub Actions (Automated)
+Releases are distributed via GitHub Releases. Push a version bump to `main` and GitHub Actions builds a signed, notarized DMG and creates the release automatically.
 
-Push to `main` with a version bump triggers the release workflow:
-1. Checks version against latest git tag
-2. Runs all tests
-3. Archives and exports with Developer ID signing
-4. Creates GitHub Release with ZIP
+### New Machine Setup
+
+When setting up a new development Mac for releases:
+
+```bash
+# Check what's missing
+./tools/scripts/preflight.sh
+
+# Or run interactive guided setup (walks you through each missing item)
+./tools/scripts/preflight.sh --setup
+```
+
+This verifies all prerequisites and tells you exactly what's missing. With `--setup`, it prompts you to configure each missing item interactively.
+
+#### 1. Developer ID Certificate
+
+Open Xcode → Settings → Accounts → sign in with your Apple ID. Xcode downloads certificates automatically. Verify:
+
+```bash
+security find-identity -v -p codesigning | grep "Developer ID"
+```
+
+#### 2. Notarization Credentials
+
+Store your Apple notarization credentials in the Keychain (one-time per machine):
+
+```bash
+xcrun notarytool store-credentials "AC_PASSWORD" \
+  --apple-id YOUR_APPLE_ID \
+  --team-id YOUR_TEAM_ID \
+  --password YOUR_APP_SPECIFIC_PASSWORD
+```
+
+Generate an app-specific password at [appleid.apple.com](https://appleid.apple.com/account/manage) → Sign-In and Security → App-Specific Passwords.
+
+#### 3. Sparkle EdDSA Signing Key
+
+The Sparkle private key must be in your Keychain for update signing. **This is the most critical secret** — if lost, existing users can't verify updates.
+
+**Import from backup** (preferred):
+```bash
+# Find generate_keys in DerivedData (build the project first)
+find ~/Library/Developer/Xcode/DerivedData -name "generate_keys" -path "*/artifacts/*" -type f
+
+# Import the backed-up private key
+/path/to/generate_keys --import YOUR_PRIVATE_KEY_BASE64
+```
+
+**Export for backup** (do this on your current machine):
+```bash
+security find-generic-password -s "https://sparkle-project.org" -a "ed25519" -w
+```
+
+Save the output in your password manager. This one string restores signing on any Mac.
+
+### Version Bumping
+
+**Before pushing any user-facing change**, bump the version. This triggers the GitHub Actions release workflow.
+
+Update the version in **all 3 locations** (missing any will break the release). Use `/bump` to automate this:
+
+1. `Glimpse.xcodeproj/project.pbxproj` → `MARKETING_VERSION` (4 occurrences: Debug/Release × App/Tests)
+2. `Glimpse.xcodeproj/project.pbxproj` → `CURRENT_PROJECT_VERSION` (4 occurrences — must match build number)
+3. `README.md` → version badge
+
+Build number (`CURRENT_PROJECT_VERSION`) is critical — Sparkle uses it (not marketing version) to determine update ordering. Always increment it.
+
+Commit with: `chore: bump version to X.Y.Z`
+
+### How to Release
+
+#### GitHub Actions (Primary — triggered on push to main)
+
+1. Bump version in all 3 locations (use `/bump`)
+2. Commit: `git commit -m "chore: bump version to X.Y.Z"`
+3. Push to main → GitHub Actions builds and releases automatically
+
+#### Local Script (Backup)
+
+```bash
+# 1. Verify machine is ready (use --setup on first time)
+./tools/scripts/preflight.sh --setup
+
+# 2. Bump version
+# Use /bump or manually update the 3 locations
+
+# 3. Build, sign, notarize, create DMG
+./tools/scripts/release-upload.sh
+
+# 4. Commit, tag, and push
+git add -A && git commit -m "chore: bump version to X.Y.Z"
+git tag v$(grep 'MARKETING_VERSION' Glimpse.xcodeproj/project.pbxproj | head -1 | sed 's/[^0-9.]//g')
+git push origin main --tags
+
+# 5. Create GitHub Release with the built artifacts
+gh release create v${VERSION} build/release/Glimpse-*.dmg build/release/appcast.xml --title v${VERSION} --generate-notes
+```
+
+### What the Release Pipeline Does
+
+1. Archives with `xcodebuild -scheme Glimpse -configuration Release`
+2. Exports and signs with Developer ID + hardened runtime
+3. Notarizes app + staples
+4. Creates styled DMG via `create-dmg` with background image
+5. Notarizes DMG
+6. Signs DMG with Sparkle EdDSA key
+7. Generates appcast.xml with `generate_appcast`
+8. Creates GitHub Release with DMG + appcast.xml attached
+
+### Release Artifacts
+
+Each GitHub Release contains:
+
+| File | Purpose |
+|---|---|
+| `Glimpse-{version}.dmg` | Styled DMG (signed + notarized) |
+| `appcast.xml` | Sparkle update feed |
 
 ### Required Secrets
 
 | Secret | Purpose |
 |---|---|
-| `MACOS_CERTIFICATE` | Base64 Developer ID .p12 |
-| `MACOS_CERTIFICATE_PWD` | .p12 password |
-| `SPARKLE_PRIVATE_KEY` | EdDSA key for Sparkle signing |
-| `DEVELOPMENT_TEAM` | Apple Team ID |
+| `MACOS_CERTIFICATE` | Developer ID .p12 (base64-encoded) |
+| `MACOS_CERTIFICATE_PWD` | Password for .p12 |
+| `SPARKLE_PRIVATE_KEY` | EdDSA signing for Sparkle updates |
+| `APPLE_ID` | Notarization |
+| `APPLE_ID_PASSWORD` | Notarization (app-specific password) |
+| `TEAM_ID` | Notarization |
+
+### Troubleshooting
+
+Run preflight to diagnose issues:
+```bash
+./tools/scripts/preflight.sh          # Check only
+./tools/scripts/preflight.sh --setup  # Interactive fix for each failure
+```
+
+Common problems:
+- **"Developer ID certificate not found"** — Open Xcode, sign in, let it download certificates
+- **"Notarization credentials not configured"** — Run `xcrun notarytool store-credentials`
+- **"Sparkle EdDSA private key not in Keychain"** — Import from backup (see above)
+
+## Deferred Items
+
+These are known issues intentionally deferred. See `.claude/rules/known-issues.md` for details.
 
 ## License
 

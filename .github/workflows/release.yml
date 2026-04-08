@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   check-version:
@@ -19,8 +20,8 @@ jobs:
         id: check
         run: |
           VERSION=$(grep 'MARKETING_VERSION' Glimpse.xcodeproj/project.pbxproj | head -1 | sed 's/[^0-9.]//g')
-          echo "version=$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
           if git rev-parse "v$VERSION" >/dev/null 2>&1; then
             echo "should_release=false" >> "$GITHUB_OUTPUT"
             echo "Tag v$VERSION already exists — skipping release"
@@ -48,12 +49,17 @@ jobs:
       - name: Test (GlimpseCore)
         run: cd GlimpseCore && swift test
 
-  release:
+  # ─── Build, Sign, Notarize, Create GitHub Release ───
+
+  build:
     needs: [check-version, test]
     if: needs.check-version.outputs.should_release == 'true'
-    runs-on: macos-latest
+    runs-on: self-hosted
     permissions:
       contents: write
+    env:
+      VERSION: ${{ needs.check-version.outputs.version }}
+      DOWNLOAD_URL_PREFIX: https://github.com/rlchandani/Glimpse/releases/download
     steps:
       - uses: actions/checkout@v5
 
@@ -63,110 +69,164 @@ jobs:
           MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
         run: |
           CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PATH=$RUNNER_TEMP/glimpse-signing.keychain-db
           KEYCHAIN_PWD=$(openssl rand -hex 16)
 
-          echo -n "$MACOS_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
+          # Save original keychain search list for restore in cleanup
+          security list-keychains -d user | tr -d '"' | tr '\n' ' ' > "$RUNNER_TEMP/original-keychains.txt"
 
-          security create-keychain -p "$KEYCHAIN_PWD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PWD" $KEYCHAIN_PATH
+          # Download Apple CA certificates (required for complete trust chain)
+          curl -sL "https://www.apple.com/appleca/AppleIncRootCertificate.cer" -o "$RUNNER_TEMP/AppleRoot.cer"
+          curl -sL "https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer" -o "$RUNNER_TEMP/AppleWWDRCAG3.cer"
+          curl -sL "https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer" -o "$RUNNER_TEMP/DeveloperIDG2CA.cer"
 
-          security import $CERTIFICATE_PATH -P "$MACOS_CERTIFICATE_PWD" \
-            -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          echo -n "$MACOS_CERTIFICATE" | base64 --decode -o "$CERTIFICATE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+
+          # Import Apple CA chain for trust verification
+          security import "$RUNNER_TEMP/AppleRoot.cer" -k "$KEYCHAIN_PATH" -T /usr/bin/codesign
+          security import "$RUNNER_TEMP/AppleWWDRCAG3.cer" -k "$KEYCHAIN_PATH" -T /usr/bin/codesign
+          security import "$RUNNER_TEMP/DeveloperIDG2CA.cer" -k "$KEYCHAIN_PATH" -T /usr/bin/codesign
+
+          # Import developer certificates
+          security import "$CERTIFICATE_PATH" -P "$MACOS_CERTIFICATE_PWD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple: \
-            -k "$KEYCHAIN_PWD" $KEYCHAIN_PATH
+            -k "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+          # Include login keychain + System Roots for Apple CA trust chain
+          security list-keychains -d user -s "$KEYCHAIN_PATH" ~/Library/Keychains/login.keychain-db /Library/Keychains/System.keychain /System/Library/Keychains/SystemRootCertificates.keychain
 
-          security list-keychains -d user -s $KEYCHAIN_PATH
+          # Verify certificate chain is valid
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH" || true
 
-          rm -f $CERTIFICATE_PATH
+          rm -f "$CERTIFICATE_PATH" "$RUNNER_TEMP/AppleRoot.cer" "$RUNNER_TEMP/AppleWWDRCAG3.cer" "$RUNNER_TEMP/DeveloperIDG2CA.cer"
 
-      - name: Resolve packages
+      - name: Resolve SPM dependencies
         run: xcodebuild -project Glimpse.xcodeproj -scheme Glimpse -resolvePackageDependencies -skipMacroValidation
 
-      - name: Build Release archive
-        env:
-          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+      - name: Install tools
+        run: command -v create-dmg || brew install create-dmg
+
+      - name: Archive
         run: |
-          xcodebuild -project Glimpse.xcodeproj -scheme Glimpse \
-            -configuration Release archive \
-            -archivePath ./build/Glimpse.xcarchive \
+          xcodebuild -project Glimpse.xcodeproj -scheme Glimpse -configuration Release \
+            -destination 'platform=macOS' \
+            -archivePath ./build/archive.xcarchive \
             -skipMacroValidation \
-            DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM}"
+            ARCHS=arm64 \
+            DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }} archive
 
-      - name: Export archive
+      - name: Export
         run: |
-          mkdir -p ./build/export
+          /usr/libexec/PlistBuddy -c "Add :method string developer-id" ./build/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :signingStyle string automatic" ./build/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :teamID string ${{ secrets.TEAM_ID }}" ./build/ExportOptions.plist
           xcodebuild -exportArchive \
-            -archivePath ./build/Glimpse.xcarchive \
-            -exportOptionsPlist .github/ExportOptions.plist \
+            -archivePath ./build/archive.xcarchive \
             -exportPath ./build/export \
-            || {
-              echo "exportArchive failed, falling back to manual copy + re-sign"
-              cp -R ./build/Glimpse.xcarchive/Products/Applications/Glimpse.app ./build/export/Glimpse.app
-              find ./build/export/Glimpse.app/Contents/Frameworks -name "*.framework" -exec codesign --force --sign - --timestamp {} \;
-              codesign --force --sign - --timestamp --deep ./build/export/Glimpse.app
-            }
+            -exportOptionsPlist ./build/ExportOptions.plist
+          test -d "./build/export/Glimpse.app" || { echo "❌ Export failed"; exit 1; }
 
-      - name: Package and sign with Sparkle
+      - name: Notarize app
         env:
-          SPARKLE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-          RELEASE_VERSION: ${{ needs.check-version.outputs.version }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
         run: |
-          cp -R ./build/export/Glimpse.app ./build/Glimpse.app
-          ditto -c -k --keepParent ./build/Glimpse.app "./build/Glimpse-${RELEASE_VERSION}.zip"
+          # Verify export signing is correct
+          codesign -dvv ./build/export/Glimpse.app 2>&1 | grep -E "Authority|Runtime"
 
-          # Find Sparkle bin from resolved packages
-          SPARKLE_BIN=$(find ~/Library/Developer/Xcode/DerivedData/Glimpse-*/SourcePackages/artifacts/sparkle/Sparkle/bin -maxdepth 0 2>/dev/null | head -1)
+          # Notarize
+          ditto -c -k --keepParent ./build/export/Glimpse.app ./build/Glimpse-notarize.zip
+          xcrun notarytool submit ./build/Glimpse-notarize.zip \
+            --apple-id "$APPLE_ID" --password "$APPLE_ID_PASSWORD" --team-id "$TEAM_ID" --wait
+          for i in 1 2 3; do
+            if xcrun stapler staple ./build/export/Glimpse.app; then break; fi
+            echo "Staple attempt $i failed, waiting 15s..."
+            sleep 15
+          done
+          xcrun stapler validate ./build/export/Glimpse.app || { echo "❌ App staple failed after 3 attempts"; exit 1; }
+          rm -f ./build/Glimpse-notarize.zip
 
-          if [ -n "$SPARKLE_BIN" ] && [ -n "$SPARKLE_KEY" ]; then
-            echo "$SPARKLE_KEY" > /tmp/sparkle_key
-            SIGN_OUTPUT=$("$SPARKLE_BIN/sign_update" "./build/Glimpse-${RELEASE_VERSION}.zip" --ed-key-file /tmp/sparkle_key)
-            rm -f /tmp/sparkle_key
+      - name: Create and notarize DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+        run: |
+          mkdir -p ./build/dmg_staging
+          cp -R ./build/export/Glimpse.app ./build/dmg_staging/
 
-            ED_SIGNATURE=$(echo "$SIGN_OUTPUT" | grep -o 'edSignature="[^"]*"' | cut -d'"' -f2)
-            LENGTH=$(echo "$SIGN_OUTPUT" | grep -o 'length="[^"]*"' | cut -d'"' -f2)
-            BUILD_NUMBER=$(grep 'CURRENT_PROJECT_VERSION' Glimpse.xcodeproj/project.pbxproj | head -1 | sed 's/[^0-9]//g')
+          DMG_ARGS=(
+            --volname "Glimpse"
+            --window-pos 200 120 --window-size 600 400
+            --icon-size 100 --icon "Glimpse.app" 150 190
+            --app-drop-link 450 190 --hide-extension "Glimpse.app"
+            --no-internet-enable
+          )
 
-            cat > ./build/appcast.xml << APPCAST_EOF
-          <?xml version="1.0" encoding="utf-8"?>
-          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
-            <channel>
-              <title>Glimpse</title>
-              <item>
-                <title>Version ${RELEASE_VERSION}</title>
-                <sparkle:version>${BUILD_NUMBER}</sparkle:version>
-                <sparkle:shortVersionString>${RELEASE_VERSION}</sparkle:shortVersionString>
-                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-                <enclosure
-                  url="https://github.com/rlchandani/Glimpse/releases/download/v${RELEASE_VERSION}/Glimpse-${RELEASE_VERSION}.zip"
-                  length="${LENGTH}"
-                  type="application/octet-stream"
-                  sparkle:edSignature="${ED_SIGNATURE}"
-                />
-              </item>
-            </channel>
-          </rss>
-          APPCAST_EOF
-            echo "Sparkle appcast generated with signature"
-          else
-            echo "Sparkle signing skipped (no key or Sparkle not found)"
+          # Add optional resources if they exist
+          if [ -f "./tools/resources/AppIcon.icns" ]; then
+            DMG_ARGS+=(--volicon "./tools/resources/AppIcon.icns")
           fi
 
-      - name: Clean up keychain
-        if: always()
-        run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db 2>/dev/null || true
+          create-dmg "${DMG_ARGS[@]}" "./build/Glimpse-${VERSION}.dmg" "./build/dmg_staging"
+
+          # Set custom file icon on the DMG
+          if [ -f "./tools/resources/AppIcon.icns" ]; then
+            ICON_RSRC=$(mktemp)
+            sips -i ./tools/resources/AppIcon.icns >/dev/null 2>&1
+            DeRez -only icns ./tools/resources/AppIcon.icns > "$ICON_RSRC" 2>/dev/null
+            Rez -append "$ICON_RSRC" -o "./build/Glimpse-${VERSION}.dmg" 2>/dev/null
+            SetFile -a C "./build/Glimpse-${VERSION}.dmg" 2>/dev/null
+            rm -f "$ICON_RSRC"
+          fi
+
+          xcrun notarytool submit "./build/Glimpse-${VERSION}.dmg" \
+            --apple-id "$APPLE_ID" --password "$APPLE_ID_PASSWORD" --team-id "$TEAM_ID" --wait
+          for i in 1 2 3; do
+            if xcrun stapler staple "./build/Glimpse-${VERSION}.dmg"; then break; fi
+            echo "Staple attempt $i failed, waiting 15s..."; sleep 15
+          done
+          xcrun stapler validate "./build/Glimpse-${VERSION}.dmg" || { echo "❌ DMG staple failed after 3 attempts"; exit 1; }
+
+      - name: Sign with Sparkle and generate appcast
+        env:
+          SPARKLE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          SPARKLE_BIN=$(find ~/Library/Developer/Xcode/DerivedData -path "*/artifacts/sparkle/Sparkle/bin" -maxdepth 6 2>/dev/null | head -1)
+          KEY_FILE=$(mktemp); chmod 600 "$KEY_FILE"; printf '%s' "$SPARKLE_KEY" > "$KEY_FILE"
+          "$SPARKLE_BIN/sign_update" "./build/Glimpse-${VERSION}.dmg" --ed-key-file "$KEY_FILE"
+          mkdir -p ./build/appcast_source
+          cp "./build/Glimpse-${VERSION}.dmg" ./build/appcast_source/
+          "$SPARKLE_BIN/generate_appcast" --ed-key-file "$KEY_FILE" \
+            --download-url-prefix "$DOWNLOAD_URL_PREFIX/v${VERSION}/" \
+            ./build/appcast_source
+          rm -f "$KEY_FILE"
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_VERSION: ${{ needs.check-version.outputs.version }}
         run: |
-          ASSETS="./build/Glimpse-${RELEASE_VERSION}.zip"
-          if [ -f ./build/appcast.xml ]; then
-            ASSETS="$ASSETS ./build/appcast.xml"
+          ASSETS="./build/Glimpse-${VERSION}.dmg"
+          if [ -f ./build/appcast_source/appcast.xml ]; then
+            ASSETS="$ASSETS ./build/appcast_source/appcast.xml"
           fi
-          gh release create "v${RELEASE_VERSION}" \
+          gh release create "v${VERSION}" \
             $ASSETS \
-            --title "v${RELEASE_VERSION}" \
+            --title "v${VERSION}" \
             --generate-notes
+
+      - name: Clean up
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/glimpse-signing.keychain-db 2>/dev/null || true
+          # Restore original keychain search list (saved before we modified it)
+          if [ -f "$RUNNER_TEMP/original-keychains.txt" ]; then
+            security list-keychains -d user -s $(cat "$RUNNER_TEMP/original-keychains.txt")
+          else
+            security list-keychains -d user -s ~/Library/Keychains/login.keychain-db /Library/Keychains/System.keychain
+          fi
