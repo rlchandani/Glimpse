@@ -46,6 +46,7 @@ enum AppDesign {
         static let monthBorderOpacity: Double = 0.4
         static let workdayTintOpacity: Double = 0.08
         static let dimmedTextOpacity: Double = 0.4
+        static let hoverBorderOpacity: Double = 0.4
     }
 
     // MARK: - Status Item

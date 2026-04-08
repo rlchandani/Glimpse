@@ -7,6 +7,8 @@ struct CalendarPopoverView: View {
 
     @State private var scrollAccumulator: CGFloat = 0
     @State private var scrollMonitor: Any?
+    @State private var isMouseOverCalendar = false
+    @State private var hoveredDate: Date?
     @State private var keyMonitor: Any?
     @State private var aiQueryText: String = ""
     @State private var aiProcessing: Bool = false
@@ -42,6 +44,10 @@ struct CalendarPopoverView: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
                 calendarSection
+                    .onHover { hovering in
+                        isMouseOverCalendar = hovering
+                        if !hovering { hoveredDate = nil }
+                    }
                 selectedDateInfo
                 eventsSection
                 footerView
@@ -130,6 +136,9 @@ struct CalendarPopoverView: View {
 
     private func setupScrollMonitor() {
         scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
+            // Only navigate months when the cursor is over the calendar grid
+            guard isMouseOverCalendar else { return event }
+
             let delta = event.scrollingDeltaY
             let clamped = max(-maxScrollContribution, min(maxScrollContribution, delta))
             scrollAccumulator += clamped
@@ -430,6 +439,7 @@ struct CalendarPopoverView: View {
         let isToday = day.isCurrentMonth && cal.isDateInToday(day.date)
         let dayNumber = cal.component(.day, from: day.date)
         let isSelected = store.selectedDate.map { cal.isDate($0, inSameDayAs: day.date) } ?? false
+        let isHovered = hoveredDate.map { cal.isDate($0, inSameDayAs: day.date) } ?? false
 
         return Text("\(dayNumber)")
             .font(.system(.body, design: .rounded))
@@ -452,6 +462,13 @@ struct CalendarPopoverView: View {
                             width: AppDesign.Grid.todayCircleSize,
                             height: AppDesign.Grid.todayCircleSize
                         )
+                } else if isHovered {
+                    Circle()
+                        .strokeBorder(Color.secondary.opacity(AppDesign.Grid.hoverBorderOpacity), lineWidth: 1)
+                        .frame(
+                            width: AppDesign.Grid.todayCircleSize,
+                            height: AppDesign.Grid.todayCircleSize
+                        )
                 } else if isWorkdayColumn && day.isCurrentMonth {
                     RoundedRectangle(cornerRadius: 2)
                         .fill(Color.accentColor.opacity(AppDesign.Grid.workdayTintOpacity))
@@ -459,6 +476,9 @@ struct CalendarPopoverView: View {
             }
             .foregroundStyle(isToday ? .white : foregroundColor(for: day, isToday: false, isSelected: isSelected))
             .contentShape(Rectangle())
+            .onHover { hovering in
+                hoveredDate = hovering ? day.date : nil
+            }
             .onTapGesture {
                 store.send(.dateTapped(day.date))
             }
