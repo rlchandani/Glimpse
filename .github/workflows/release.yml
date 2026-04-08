@@ -31,8 +31,6 @@ jobs:
           fi
 
   test:
-    needs: check-version
-    if: needs.check-version.outputs.should_release == 'true'
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v5
