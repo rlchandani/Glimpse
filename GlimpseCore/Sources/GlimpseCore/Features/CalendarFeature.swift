@@ -19,11 +19,9 @@ public struct CalendarFeature: Sendable {
 
         public var selectedDateInfo: String? {
             guard let date = selectedDate else { return nil }
-            let formatter = DateFormatter()
-            formatter.dateFormat = "EEEE, MMMM d, yyyy"
             let cal = Calendar.current
             let week = cal.component(.weekOfYear, from: date)
-            return "\(formatter.string(from: date)) — Week \(week)"
+            return "\(Self.selectedDateFormatter.string(from: date)) — Week \(week)"
         }
 
         public var calendar: Calendar {
@@ -37,14 +35,26 @@ public struct CalendarFeature: Sendable {
         }
 
         public var monthYearString: String {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMMM yyyy"
-            return formatter.string(from: displayedMonth)
+            Self.monthYearFormatter.string(from: displayedMonth)
         }
 
         public init(displayedMonth: Date = Date()) {
             self.displayedMonth = displayedMonth
         }
+
+        // MARK: - Cached formatters (created once, thread-safe after init)
+
+        private static let monthYearFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "MMMM yyyy"
+            return f
+        }()
+
+        private static let selectedDateFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "EEEE, MMMM d, yyyy"
+            return f
+        }()
     }
 
     public enum Action: Sendable {

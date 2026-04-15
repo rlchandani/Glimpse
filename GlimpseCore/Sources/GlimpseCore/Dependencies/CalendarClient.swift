@@ -8,6 +8,26 @@ public struct CalendarClient: Sendable {
     public var menuBarDateString: @Sendable (Date, MenuBarDisplayOptions) -> String = { _, _ in "" }
 }
 
+// MARK: - Cached formatters for menu bar date string
+
+private let menuBarDayOfWeekFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "EEE"
+    return f
+}()
+
+private let menuBarMonthFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "MMM"
+    return f
+}()
+
+private let menuBarYearFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "yyyy"
+    return f
+}()
+
 extension CalendarClient: DependencyKey {
     public static var liveValue: Self {
         Self(
@@ -55,17 +75,14 @@ extension CalendarClient: DependencyKey {
             },
             menuBarDateString: { date, options in
                 var parts: [String] = []
-                let formatter = DateFormatter()
 
                 if options.showDayOfWeek {
-                    formatter.dateFormat = "EEE"
-                    parts.append(formatter.string(from: date))
+                    parts.append(menuBarDayOfWeekFormatter.string(from: date))
                 }
 
                 var dateParts: [String] = []
                 if options.showMonth {
-                    formatter.dateFormat = "MMM"
-                    dateParts.append(formatter.string(from: date))
+                    dateParts.append(menuBarMonthFormatter.string(from: date))
                 }
                 if options.showDate {
                     dateParts.append("\(Calendar.current.component(.day, from: date))")
@@ -76,8 +93,7 @@ extension CalendarClient: DependencyKey {
                 }
 
                 if options.showYear {
-                    formatter.dateFormat = "yyyy"
-                    parts.append(formatter.string(from: date))
+                    parts.append(menuBarYearFormatter.string(from: date))
                 }
 
                 return parts.joined(separator: ", ")
