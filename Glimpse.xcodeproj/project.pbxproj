@@ -32,6 +32,7 @@
 		BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000012 /* MonthBorderShapeTests.swift */; };
 		BB00000000000000000023 /* DateIconRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000013 /* DateIconRendererTests.swift */; };
 		BB00000000000000000024 /* AppDesignTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000014 /* AppDesignTests.swift */; };
+		BB00000000000000000025 /* CalendarStatusItemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000015 /* CalendarStatusItemTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,6 +74,7 @@
 		BB00000000000000000012 /* MonthBorderShapeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBorderShapeTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000013 /* DateIconRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateIconRendererTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000014 /* AppDesignTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDesignTests.swift; sourceTree = "<group>"; };
+		BB00000000000000000015 /* CalendarStatusItemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarStatusItemTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -148,6 +150,7 @@
 				BB00000000000000000012 /* MonthBorderShapeTests.swift */,
 				BB00000000000000000013 /* DateIconRendererTests.swift */,
 				BB00000000000000000014 /* AppDesignTests.swift */,
+				BB00000000000000000015 /* CalendarStatusItemTests.swift */,
 			);
 			name = GlimpseTests;
 			path = GlimpseTests;
@@ -271,6 +274,7 @@
 				BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */,
 				BB00000000000000000023 /* DateIconRendererTests.swift in Sources */,
 				BB00000000000000000024 /* AppDesignTests.swift in Sources */,
+				BB00000000000000000025 /* CalendarStatusItemTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

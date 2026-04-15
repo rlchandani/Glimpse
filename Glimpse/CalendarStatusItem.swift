@@ -15,6 +15,8 @@ final class CalendarStatusItem {
     private var panel: CalendarPanel?
     private var midnightTimer: Timer?
     private var displayChangeObserver: Any?
+    private var wakeObserver: Any?
+    private var timeChangeObserver: Any?
     private let preferencesClient = PreferencesClient.liveValue
     private let calendarClient = CalendarClient.liveValue
 
@@ -33,6 +35,7 @@ final class CalendarStatusItem {
         scheduleMidnightRefresh()
         registerGlobalHotkey()
         observeDisplayChanges()
+        observeSystemEvents()
         AppLogger.statusItem.info("Status item configured")
     }
 
@@ -44,6 +47,32 @@ final class CalendarStatusItem {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.updateMenuBarDisplay()
+            }
+        }
+    }
+
+    private func observeSystemEvents() {
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.updateMenuBarDisplay()
+                self?.scheduleMidnightRefresh()
+                AppLogger.statusItem.info("Refreshed after wake")
+            }
+        }
+
+        timeChangeObserver = NotificationCenter.default.addObserver(
+            forName: .NSSystemClockDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.updateMenuBarDisplay()
+                self?.scheduleMidnightRefresh()
+                AppLogger.statusItem.info("Refreshed after system clock change")
             }
         }
     }
@@ -84,26 +113,32 @@ final class CalendarStatusItem {
         view.frame = button.bounds
     }
 
+    /// Compute the next midnight (00:00:01) after the given date.
+    /// Visible for testing.
+    nonisolated static func nextMidnight(after date: Date, calendar: Calendar = .current) -> Date? {
+        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: date),
+              let midnight = calendar.date(bySettingHour: 0, minute: 0, second: 1, of: tomorrow)
+        else { return nil }
+        return midnight
+    }
+
     private func scheduleMidnightRefresh() {
-        let cal = Calendar.current
-        guard let tomorrow = cal.date(byAdding: .day, value: 1, to: Date()),
-              let midnight = cal.date(bySettingHour: 0, minute: 0, second: 1, of: tomorrow)
-        else {
+        midnightTimer?.invalidate()
+
+        guard let midnight = Self.nextMidnight(after: Date()) else {
             AppLogger.statusItem.error("Failed to compute next midnight for refresh")
             return
         }
 
-        let interval = midnight.timeIntervalSinceNow
-        midnightTimer = Timer.scheduledTimer(
-            withTimeInterval: interval,
-            repeats: false
-        ) { [weak self] _ in
+        let timer = Timer(fire: midnight, interval: 0, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 self?.updateMenuBarDisplay()
                 self?.scheduleMidnightRefresh()
                 AppLogger.statusItem.info("Midnight refresh completed")
             }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        midnightTimer = timer
     }
 
     @objc func statusItemClicked() {
