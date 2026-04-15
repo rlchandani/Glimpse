@@ -16,6 +16,7 @@ public struct CalendarFeature: Sendable {
         public var todayEvents: [CalendarEvent] = []
         public var calendarAccessGranted: Bool = false
         public var selectedDate: Date?
+        public var showAISearch: Bool = true
 
         public var selectedDateInfo: String? {
             guard let date = selectedDate else { return nil }
@@ -89,6 +90,7 @@ public struct CalendarFeature: Sendable {
             case .onAppear:
                 state.startOfWeekday = preferencesClient.loadStartOfWeekday()
                 state.workdays = preferencesClient.loadWorkdays()
+                state.showAISearch = preferencesClient.loadShowAISearch()
                 recomputeDays(&state)
                 let status = eventKitClient.authorizationStatus()
                 if status == .fullAccess {
@@ -208,6 +210,7 @@ public struct CalendarFeature: Sendable {
             case .reloadPreferences:
                 state.startOfWeekday = preferencesClient.loadStartOfWeekday()
                 state.workdays = preferencesClient.loadWorkdays()
+                state.showAISearch = preferencesClient.loadShowAISearch()
                 recomputeDays(&state)
                 return .none
 

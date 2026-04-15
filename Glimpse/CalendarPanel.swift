@@ -99,8 +99,6 @@ final class CalendarPanel: NSPanel {
         }
         // Reload preferences in case they changed while panel was hidden
         calendarStore.send(.reloadPreferences)
-        // Refresh local @State (showAISearch) without triggering another reloadPreferences
-        NotificationCenter.default.post(name: .aiSearchSettingDidChange, object: nil)
     }
 
     /// Activate the app so TextField can receive focus

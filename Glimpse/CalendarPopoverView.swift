@@ -14,7 +14,6 @@ struct CalendarPopoverView: View {
     @State private var aiProcessing: Bool = false
     @State private var aiErrorMessage: String?
     @State private var aiFieldActive: Bool = false
-    @State private var showAISearch: Bool = PreferencesClient.liveValue.loadShowAISearch()
     @FocusState private var aiFieldFocused: Bool
     @State private var showQuitConfirm: Bool = false
     @State private var preferencesStore = Store(initialState: PreferencesFeature.State()) {
@@ -32,14 +31,9 @@ struct CalendarPopoverView: View {
             VStack(spacing: 12) {
                 if store.showingPreferences {
                     PreferencesView(store: preferencesStore)
-                        .onDisappear {
-                            withAnimation(AppDesign.Animation.standard) {
-                                showAISearch = PreferencesClient.liveValue.loadShowAISearch()
-                            }
-                        }
                 }
                 headerView
-                if showAISearch {
+                if store.showAISearch {
                     aiQueryField
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
@@ -61,7 +55,6 @@ struct CalendarPopoverView: View {
         .frame(width: 300)
         .onAppear {
             store.send(.onAppear)
-            showAISearch = PreferencesClient.liveValue.loadShowAISearch()
             setupKeyMonitor()
             setupScrollMonitor()
         }
@@ -73,11 +66,6 @@ struct CalendarPopoverView: View {
             store.send(.reloadPreferences)
             showQuitConfirm = false
         }
-        .onReceive(NotificationCenter.default.publisher(for: .aiSearchSettingDidChange)) { _ in
-            withAnimation(AppDesign.Animation.standard) {
-                showAISearch = PreferencesClient.liveValue.loadShowAISearch()
-            }
-        }
     }
 
     // MARK: - Event Monitors
@@ -85,7 +73,7 @@ struct CalendarPopoverView: View {
     private func setupKeyMonitor() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             // Cmd+G — activate inline AI input (if enabled)
-            if event.keyCode == 5 && event.modifierFlags.contains(.command) && showAISearch {
+            if event.keyCode == 5 && event.modifierFlags.contains(.command) && store.showAISearch {
                 aiFieldActive = true
                 return nil
             }
