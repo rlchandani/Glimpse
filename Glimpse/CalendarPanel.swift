@@ -11,6 +11,7 @@ final class CalendarPanel: NSPanel {
 
     var caretXOffset: CGFloat = 0
     var isPinned = false
+    var isTextInputActive = false
     private var previousApp: NSRunningApplication?
     private let calendarStore: StoreOf<CalendarFeature>
     private var hostingView: NSHostingView<CalendarPopoverView>?
@@ -46,7 +47,11 @@ final class CalendarPanel: NSPanel {
         contentView = hosting
         hostingView = hosting
 
-        // Observe intrinsic content size changes to resize panel (debounced)
+        // KVO on intrinsicContentSize is not formally documented as KVO-compliant,
+        // but NSHostingView emits KVO notifications for it in practice (macOS 14+).
+        // This is the only reliable way to detect SwiftUI content size changes from
+        // the AppKit side. If a future macOS breaks this, the panel will simply stop
+        // auto-resizing and remain at its initial size — a graceful degradation.
         sizeObservation = hosting.observe(\.intrinsicContentSize, options: [.new]) { [weak self] _, _ in
             Task { @MainActor in
                 self?.scheduleResizeToFitContent()
@@ -116,7 +121,7 @@ final class CalendarPanel: NSPanel {
 
     override func resignKey() {
         super.resignKey()
-        if !isPinned {
+        if !isPinned && !isTextInputActive {
             deactivateTextInput()
             orderOut(nil)
         }
