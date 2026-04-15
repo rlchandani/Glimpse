@@ -284,6 +284,32 @@ struct PreferencesView: View {
     }()
     @State private var isRecordingHotkey = false
     @State private var hotkeyMonitor: Any?
+    @State private var hotkeyConflict: String?
+
+    /// System shortcuts that must not be overridden.
+    private static let reservedShortcuts: Set<HotkeyCombo> = {
+        let cmd = UInt32(cmdKey)
+        let cmdShift = UInt32(cmdKey | shiftKey)
+        return [
+            HotkeyCombo(keyCode: 12, modifiers: cmd),      // ⌘Q (Quit)
+            HotkeyCombo(keyCode: 13, modifiers: cmd),      // ⌘W (Close)
+            HotkeyCombo(keyCode: 4, modifiers: cmd),       // ⌘H (Hide)
+            HotkeyCombo(keyCode: 46, modifiers: cmd),      // ⌘M (Minimize)
+            HotkeyCombo(keyCode: 0, modifiers: cmd),       // ⌘A (Select All)
+            HotkeyCombo(keyCode: 8, modifiers: cmd),       // ⌘C (Copy)
+            HotkeyCombo(keyCode: 9, modifiers: cmd),       // ⌘V (Paste)
+            HotkeyCombo(keyCode: 7, modifiers: cmd),       // ⌘X (Cut)
+            HotkeyCombo(keyCode: 6, modifiers: cmd),       // ⌘Z (Undo)
+            HotkeyCombo(keyCode: 49, modifiers: cmd),      // ⌘Space (Spotlight)
+            HotkeyCombo(keyCode: 35, modifiers: cmd),      // ⌘P (Print)
+            HotkeyCombo(keyCode: 1, modifiers: cmd),       // ⌘S (Save)
+            HotkeyCombo(keyCode: 3, modifiers: cmd),       // ⌘F (Find)
+            HotkeyCombo(keyCode: 17, modifiers: cmd),      // ⌘T (New Tab)
+            HotkeyCombo(keyCode: 45, modifiers: cmd),      // ⌘N (New)
+            HotkeyCombo(keyCode: 31, modifiers: cmd),      // ⌘O (Open)
+            HotkeyCombo(keyCode: 4, modifiers: cmdShift),  // ⌘⇧H (Hide Others variant)
+        ]
+    }()
 
     private var hotkeyRow: some View {
         VStack(spacing: AppDesign.Spacing.sm) {
@@ -344,6 +370,12 @@ struct PreferencesView: View {
                 }
                 .buttonStyle(.plain)
                 .focusable(false)
+
+                if let conflict = hotkeyConflict {
+                    Text(conflict)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             }
         }
         .onDisappear { stopRecording() }
@@ -351,6 +383,7 @@ struct PreferencesView: View {
 
     private func startRecording() {
         isRecordingHotkey = true
+        hotkeyConflict = nil
         hotkeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
             guard !modifiers.isEmpty else { return event }
@@ -362,6 +395,12 @@ struct PreferencesView: View {
             if modifiers.contains(.control) { carbonMods |= UInt32(controlKey) }
 
             let combo = HotkeyCombo(keyCode: UInt32(event.keyCode), modifiers: carbonMods)
+
+            if Self.reservedShortcuts.contains(combo) {
+                hotkeyConflict = "\(combo.displayString) is a system shortcut"
+                return nil
+            }
+            hotkeyConflict = nil
             combo.save()
 
             GlobalHotkey.register(combo: combo) {
