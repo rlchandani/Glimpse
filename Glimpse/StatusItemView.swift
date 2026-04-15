@@ -6,6 +6,14 @@ final class StatusItemView: NSView {
     private let separatorView = NSView()
     private let textLabel = NSTextField(labelWithString: "")
     private var isFilled = false
+    private var activeConstraints: [NSLayoutConstraint] = []
+    private var currentLayoutMode: LayoutMode?
+
+    private enum LayoutMode: Equatable {
+        case iconAndText(filled: Bool)
+        case iconOnly
+        case textOnly
+    }
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -62,13 +70,45 @@ final class StatusItemView: NSView {
         textLabel.stringValue = text
         textLabel.isHidden = !hasText
 
-        removeConstraints(constraints)
-        iconView.removeConstraints(iconView.constraints)
-
-        var viewConstraints: [NSLayoutConstraint] = []
-
+        // Determine layout mode and only rebuild constraints when it changes
+        let newMode: LayoutMode
         if showIcon && hasText {
-            viewConstraints += [
+            newMode = .iconAndText(filled: filled)
+        } else if showIcon {
+            newMode = .iconOnly
+        } else {
+            newMode = .textOnly
+        }
+
+        if currentLayoutMode != newMode {
+            NSLayoutConstraint.deactivate(activeConstraints)
+            activeConstraints = buildConstraints(
+                mode: newMode, padding: padding, innerPadding: innerPadding, iconSize: iconSize
+            )
+            NSLayoutConstraint.activate(activeConstraints)
+            currentLayoutMode = newMode
+        }
+
+        textLabel.sizeToFit()
+        var width = padding * 2
+        if showIcon { width += iconSize }
+        if showIcon && hasText {
+            width += filled ? innerPadding : (innerPadding * 2 + 1)
+        }
+        if hasText { width += textLabel.frame.width }
+        frame.size.width = ceil(width)
+
+        needsDisplay = true
+
+        setAccessibilityValue(text.isEmpty ? "Calendar" : text)
+    }
+
+    private func buildConstraints(
+        mode: LayoutMode, padding: CGFloat, innerPadding: CGFloat, iconSize: CGFloat
+    ) -> [NSLayoutConstraint] {
+        switch mode {
+        case let .iconAndText(filled):
+            return [
                 iconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: padding),
                 iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
                 iconView.widthAnchor.constraint(equalToConstant: iconSize),
@@ -96,8 +136,8 @@ final class StatusItemView: NSView {
                     equalTo: trailingAnchor, constant: -padding
                 ),
             ]
-        } else if showIcon {
-            viewConstraints += [
+        case .iconOnly:
+            return [
                 iconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: padding),
                 iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
                 iconView.widthAnchor.constraint(equalToConstant: iconSize),
@@ -106,8 +146,8 @@ final class StatusItemView: NSView {
                     equalTo: trailingAnchor, constant: -padding
                 ),
             ]
-        } else if hasText {
-            viewConstraints += [
+        case .textOnly:
+            return [
                 textLabel.leadingAnchor.constraint(
                     equalTo: leadingAnchor, constant: padding
                 ),
@@ -117,21 +157,6 @@ final class StatusItemView: NSView {
                 ),
             ]
         }
-
-        NSLayoutConstraint.activate(viewConstraints)
-
-        textLabel.sizeToFit()
-        var width = padding * 2
-        if showIcon { width += iconSize }
-        if showIcon && hasText {
-            width += filled ? innerPadding : (innerPadding * 2 + 1)
-        }
-        if hasText { width += textLabel.frame.width }
-        frame.size.width = ceil(width)
-
-        needsDisplay = true
-
-        setAccessibilityValue(text.isEmpty ? "Calendar" : text)
     }
 
     override func draw(_ dirtyRect: NSRect) {
