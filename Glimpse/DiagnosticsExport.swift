@@ -57,8 +57,12 @@ enum DiagnosticsExport {
         logProcess.standardOutput = pipe
         logProcess.standardError = pipe
         try logProcess.run()
-        logProcess.waitUntilExit()
-        let logData = pipe.fileHandleForReading.readDataToEndOfFile()
+        let logData = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
+            logProcess.terminationHandler = { _ in
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                continuation.resume(returning: data)
+            }
+        }
         let logOutput = String(data: logData, encoding: .utf8) ?? "(no logs)"
         lines.append(logOutput)
 
