@@ -6,22 +6,19 @@ public struct CalendarEvent: Equatable, Identifiable, Sendable {
     public let startDate: Date
     public let endDate: Date
     public let isAllDay: Bool
-    public let calendarColor: String?
 
     public init(
         id: String,
         title: String,
         startDate: Date,
         endDate: Date,
-        isAllDay: Bool,
-        calendarColor: String? = nil
+        isAllDay: Bool
     ) {
         self.id = id
         self.title = title
         self.startDate = startDate
         self.endDate = endDate
         self.isAllDay = isAllDay
-        self.calendarColor = calendarColor
     }
 
     public var timeString: String {

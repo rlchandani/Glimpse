@@ -45,10 +45,7 @@ extension EventKitClient: DependencyKey {
                             title: event.title ?? "Untitled",
                             startDate: event.startDate,
                             endDate: event.endDate,
-                            isAllDay: event.isAllDay,
-                            calendarColor: event.calendar.cgColor.flatMap {
-                                String(describing: $0)
-                            }
+                            isAllDay: event.isAllDay
                         )
                     }
             },
