@@ -140,18 +140,25 @@ public struct CalendarFeature: Sendable {
                 } else {
                     state.selectedDate = date
                 }
-                // Fetch events for the selected date if access is granted
-                if state.calendarAccessGranted, state.selectedDate != nil {
-                    return .run { [date] send in
-                        let events = await eventKitClient.fetchTodayEvents()
-                        // Filter events to selected date
-                        let cal = Calendar.current
-                        let filtered = events.filter { event in
-                            cal.isDate(event.startDate, inSameDayAs: date) ||
-                            cal.isDate(event.endDate, inSameDayAs: date) ||
-                            (event.startDate < date && event.endDate > date)
+                // Fetch events for the selected/deselected date
+                if state.calendarAccessGranted {
+                    if let selected = state.selectedDate {
+                        return .run { [selected] send in
+                            let events = await eventKitClient.fetchTodayEvents()
+                            let cal = Calendar.current
+                            let filtered = events.filter { event in
+                                cal.isDate(event.startDate, inSameDayAs: selected) ||
+                                cal.isDate(event.endDate, inSameDayAs: selected) ||
+                                (event.startDate < selected && event.endDate > selected)
+                            }
+                            await send(.eventsLoaded(filtered))
                         }
-                        await send(.eventsLoaded(filtered))
+                    } else {
+                        // Deselected — restore today's events
+                        return .run { send in
+                            let events = await eventKitClient.fetchTodayEvents()
+                            await send(.eventsLoaded(events))
+                        }
                     }
                 }
                 return .none

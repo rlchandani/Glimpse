@@ -221,6 +221,36 @@ struct CalendarFeatureTests {
     }
 
     @Test
+    func dateTapped_deselect_refetchesTodayEvents() async {
+        let cal = Calendar.current
+        let march15 = cal.date(from: DateComponents(year: 2026, month: 3, day: 15))!
+        let todayEvent = CalendarEvent(
+            id: "1", title: "Today Meeting",
+            startDate: Date(), endDate: Date(),
+            isAllDay: false
+        )
+
+        var state = CalendarFeature.State()
+        state.selectedDate = march15
+        state.calendarAccessGranted = true
+        state.todayEvents = [] // stale from previous filtered fetch
+
+        let store = TestStore(initialState: state) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.eventKitClient.fetchTodayEvents = { [todayEvent] }
+        }
+
+        await store.send(.dateTapped(march15)) {
+            $0.selectedDate = nil
+        }
+
+        await store.receive(\.eventsLoaded) {
+            $0.todayEvents = [todayEvent]
+        }
+    }
+
+    @Test
     func aiDateResult_navigatesAndSelects() async {
         let cal = Calendar.current
         let july4 = cal.date(from: DateComponents(year: 2026, month: 7, day: 4))!
