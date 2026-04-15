@@ -7,8 +7,14 @@ enum ProxyConfig {
     static let refineEndpoint = "\(baseURL)/refine"
 
     /// App authentication secret, reconstructed from obfuscated bytes at runtime.
-    /// XOR obfuscation prevents `strings` extraction. The proxy enforces
-    /// server-side rate limits as the real protection.
+    ///
+    /// Security model: XOR obfuscation is NOT cryptographic security - a determined
+    /// reverse engineer can trivially recover the secret by XORing the two arrays.
+    /// This only prevents casual `strings` extraction from the binary.
+    ///
+    /// The real protection is server-side: the proxy enforces per-device rate limits
+    /// via X-Auris-Device-ID, so a leaked secret cannot be used for abuse at scale.
+    /// If the secret is compromised, rotate it server-side and ship an app update.
     static var appSecret: String {
         let k: [UInt8] = [
             0x69, 0xfe, 0xcd, 0x67, 0x4d, 0xd1, 0x21, 0xf2,
