@@ -341,6 +341,10 @@ struct CalendarPopoverView: View {
         let gridInfo = store.gridInfo
         let shortNames = Calendar.current.shortWeekdaySymbols
 
+        if days.count != 42 {
+            AppLogger.calendar.error("Expected 42 calendar days, got \(days.count)")
+        }
+
         return VStack(spacing: AppDesign.Spacing.xs) {
             HStack(spacing: 0) {
                 Text("Wk")

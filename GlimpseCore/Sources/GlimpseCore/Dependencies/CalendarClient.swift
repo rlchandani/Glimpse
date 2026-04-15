@@ -49,6 +49,7 @@ extension CalendarClient: DependencyKey {
                     days.append(CalendarDay(date: date, isCurrentMonth: isCurrentMonth))
                 }
 
+                assert(days.count == 42, "calendarDays must produce exactly 42 cells, got \(days.count)")
                 return days
             },
             gridInfo: { days in
