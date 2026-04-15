@@ -62,6 +62,9 @@ struct CalendarPopoverView: View {
             removeMonitors()
             store.send(.onDisappear)
         }
+        .onChange(of: aiFieldActive) { _, active in
+            panel?.isTextInputActive = active
+        }
         .onReceive(NotificationCenter.default.publisher(for: .calendarPreferencesDidChange)) { _ in
             store.send(.reloadPreferences)
             showQuitConfirm = false
