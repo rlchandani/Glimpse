@@ -223,9 +223,6 @@ struct PreferencesView: View {
                     get: { store.showAISearch },
                     set: { newValue in
                         store.send(.setShowAISearch(newValue))
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            NotificationCenter.default.post(name: .aiSearchSettingDidChange, object: nil)
-                        }
                     }
                 ))
                     .toggleStyle(.switch)

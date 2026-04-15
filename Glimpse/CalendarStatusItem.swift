@@ -3,9 +3,11 @@ import Carbon
 import GlimpseCore
 
 extension Notification.Name {
+    /// Bridges PreferencesView display option changes to CalendarStatusItem (AppKit).
+    /// TCA delegate actions handle state within SwiftUI; these notifications cross
+    /// the SwiftUI → AppKit boundary where TCA stores are not shared.
     static let menuBarDisplayDidChange = Notification.Name("menuBarDisplayDidChange")
     static let calendarPreferencesDidChange = Notification.Name("calendarPreferencesDidChange")
-    static let aiSearchSettingDidChange = Notification.Name("aiSearchSettingDidChange")
 }
 
 @MainActor
