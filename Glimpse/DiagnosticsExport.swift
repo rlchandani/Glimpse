@@ -28,7 +28,6 @@ enum DiagnosticsExport {
         lines.append("Display options: \(prefs.loadDisplayOptions())")
         lines.append("AI search enabled: \(prefs.loadShowAISearch())")
         lines.append("AI provider: \(prefs.loadAIProvider().rawValue)")
-        lines.append("Groq key configured: \(KeychainClient.liveValue.load("groq_api_key") != nil)")
         lines.append("Hotkey enabled: \(UserDefaults.standard.bool(forKey: "hotkeyEnabled"))")
         lines.append("Hotkey combo: \(HotkeyCombo.load().displayString)")
         lines.append("")
