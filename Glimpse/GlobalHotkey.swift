@@ -51,7 +51,7 @@ final class GlobalHotkey {
     private var handler: (() -> Void)?
 
     private static var instance: GlobalHotkey?
-    private static var eventHandlerInstalled = false
+    private static var eventHandlerRef: EventHandlerRef?
     static var isRegistered: Bool { instance != nil }
     static var currentCombo: HotkeyCombo = .load()
 
@@ -83,12 +83,13 @@ final class GlobalHotkey {
             AppLogger.general.error("Failed to register global hotkey: \(status)")
         }
 
-        if !eventHandlerInstalled {
+        if eventHandlerRef == nil {
             var eventType = EventTypeSpec(
                 eventClass: OSType(kEventClassKeyboard),
                 eventKind: UInt32(kEventHotKeyPressed)
             )
 
+            var handlerRef: EventHandlerRef?
             InstallEventHandler(
                 GetApplicationEventTarget(),
                 { _, _, _ -> OSStatus in
@@ -100,9 +101,9 @@ final class GlobalHotkey {
                 1,
                 &eventType,
                 nil,
-                nil
+                &handlerRef
             )
-            eventHandlerInstalled = true
+            eventHandlerRef = handlerRef
         }
     }
 
@@ -115,5 +116,9 @@ final class GlobalHotkey {
             UnregisterEventHotKey(ref)
         }
         instance = nil
+        if let handler = eventHandlerRef {
+            RemoveEventHandler(handler)
+            eventHandlerRef = nil
+        }
     }
 }
