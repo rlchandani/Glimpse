@@ -42,17 +42,27 @@
 - **`@Dependency(\.date)` not `Date()`**: Direct Date() in reducers breaks purity
   and test determinism.
 
+## Git
+
+- **`git commit --amend` must use `--no-edit`**: When amending a commit (e.g., to add
+  a version bump), NEVER pass `-m` — it overwrites the original commit message. Always
+  use `--no-edit` to preserve the existing message. If the message needs changing, that
+  should be a deliberate separate action, not a side effect of an amend.
+
 ## Date Handling
 
 - **ISO 8601 timezone**: `ISO8601DateFormatter` defaults to UTC → off-by-one dates.
   Use `DateFormatter` with `TimeZone.current`.
 
-- **DateFormatter must be static**: Never create in loops or computed properties.
+- **Use `Date.FormatStyle` over `DateFormatter`**: `DateFormatter` is not thread-safe.
+  `Date.FormatStyle` (macOS 12+) is thread-safe and preferred in all new code.
+  Never create `DateFormatter` in computed properties or hot paths.
 
 ## Menu Bar
 
-- **StatusItemView rendering**: Use `draw(_ dirtyRect:)` for reliable rendering,
-  not CALayer sublayers (layer? may be nil during setupViews).
+- **StatusItemView rendering**: StatusItemView is a subview of NSStatusBarButton.
+  It cannot draw borders or backgrounds — the button's own rendering covers them.
+  Style the button's layer directly in CalendarStatusItem.updateMenuBarDisplay().
 
 - **Menu bar refresh**: NotificationCenter `.menuBarDisplayDidChange` is the reliable
   path. Direct onChange or AppDelegate access don't work consistently.
