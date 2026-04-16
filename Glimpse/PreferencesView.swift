@@ -282,6 +282,9 @@ struct PreferencesView: View {
     }
 
     // MARK: - Hotkey
+    // TODO: Extract hotkey recording into a dedicated HotkeyRecorderView
+    // to separate concerns (SRP). The recording state, NSEvent monitor lifecycle,
+    // and reserved shortcut validation are a self-contained subsystem.
 
     @State private var hotkeyEnabled: Bool = {
         UserDefaults.standard.object(forKey: "hotkeyEnabled") != nil

@@ -19,6 +19,9 @@ final class CalendarStatusItem {
     private var displayChangeObserver: Any?
     private var wakeObserver: Any?
     private var timeChangeObserver: Any?
+    // CalendarStatusItem uses .liveValue directly because it sits at the AppKit
+    // boundary outside TCA's dependency graph. Extract pure logic (like nextMidnight)
+    // into testable static methods instead of injecting clients here.
     private let preferencesClient = PreferencesClient.liveValue
     private let calendarClient = CalendarClient.liveValue
 

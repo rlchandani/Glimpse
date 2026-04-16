@@ -14,13 +14,19 @@ public struct PreferencesFeature: Sendable {
         public var showAISearch: Bool = true
         public var aiProvider: AIProvider = .auto
 
-        public init() {
+        public init() {}
+
+        /// Factory for live usage - loads real preferences from UserDefaults.
+        /// Use plain init() in tests to get deterministic defaults.
+        public static func live() -> State {
             let prefs = PreferencesClient.liveValue
-            self.startOfWeekday = prefs.loadStartOfWeekday()
-            self.workdays = prefs.loadWorkdays()
-            self.displayOptions = prefs.loadDisplayOptions()
-            self.showAISearch = prefs.loadShowAISearch()
-            self.aiProvider = prefs.loadAIProvider()
+            var state = State()
+            state.startOfWeekday = prefs.loadStartOfWeekday()
+            state.workdays = prefs.loadWorkdays()
+            state.displayOptions = prefs.loadDisplayOptions()
+            state.showAISearch = prefs.loadShowAISearch()
+            state.aiProvider = prefs.loadAIProvider()
+            return state
         }
     }
 

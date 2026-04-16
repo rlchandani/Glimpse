@@ -5,7 +5,6 @@ final class StatusItemView: NSView {
     private let iconView = NSImageView()
     private let separatorView = NSView()
     private let textLabel = NSTextField(labelWithString: "")
-    private var isFilled = false
     private var activeConstraints: [NSLayoutConstraint] = []
     private var currentLayoutMode: LayoutMode?
 
@@ -52,8 +51,6 @@ final class StatusItemView: NSView {
         let innerPadding = AppDesign.StatusItem.innerPadding
         let iconSize = AppDesign.Icon.menuBarSize
 
-        isFilled = filled
-
         let isDark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         let contentColor: NSColor = filled
             ? NSColor(white: 0.1, alpha: 1.0)
@@ -63,7 +60,7 @@ final class StatusItemView: NSView {
             : AppDesign.Colors.menuBarText
         iconView.contentTintColor = contentColor
         let separatorColor = filled ? NSColor(white: 0.1, alpha: 1.0) : (isDark ? .white : .black)
-        separatorView.layer!.backgroundColor = separatorColor.cgColor
+        separatorView.layer?.backgroundColor = separatorColor.cgColor
 
         iconView.image = icon
         iconView.isHidden = !showIcon

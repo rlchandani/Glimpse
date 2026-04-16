@@ -22,7 +22,8 @@ public struct CalendarFeature: Sendable {
             guard let date = selectedDate else { return nil }
             let cal = Calendar.current
             let week = cal.component(.weekOfYear, from: date)
-            return "\(Self.selectedDateFormatter.string(from: date)) — Week \(week)"
+            let formatted = date.formatted(.dateTime.weekday(.wide).month(.wide).day().year())
+            return "\(formatted) - Week \(week)"
         }
 
         public var calendar: Calendar {
@@ -36,26 +37,12 @@ public struct CalendarFeature: Sendable {
         }
 
         public var monthYearString: String {
-            Self.monthYearFormatter.string(from: displayedMonth)
+            displayedMonth.formatted(.dateTime.month(.wide).year())
         }
 
         public init(displayedMonth: Date = Date()) {
             self.displayedMonth = displayedMonth
         }
-
-        // MARK: - Cached formatters (created once, thread-safe after init)
-
-        private static let monthYearFormatter: DateFormatter = {
-            let f = DateFormatter()
-            f.dateFormat = "MMMM yyyy"
-            return f
-        }()
-
-        private static let selectedDateFormatter: DateFormatter = {
-            let f = DateFormatter()
-            f.dateFormat = "EEEE, MMMM d, yyyy"
-            return f
-        }()
     }
 
     public enum Action: Sendable {
@@ -155,12 +142,11 @@ public struct CalendarFeature: Sendable {
                 // Fetch events for the selected/deselected date
                 if state.calendarAccessGranted {
                     if let selected = state.selectedDate {
-                        return .run { [selected] send in
+                        return .run { [selected, calendar = state.calendar] send in
                             let events = await eventKitClient.fetchTodayEvents()
-                            let cal = Calendar.current
                             let filtered = events.filter { event in
-                                cal.isDate(event.startDate, inSameDayAs: selected) ||
-                                cal.isDate(event.endDate, inSameDayAs: selected) ||
+                                calendar.isDate(event.startDate, inSameDayAs: selected) ||
+                                calendar.isDate(event.endDate, inSameDayAs: selected) ||
                                 (event.startDate < selected && event.endDate > selected)
                             }
                             await send(.eventsLoaded(filtered))

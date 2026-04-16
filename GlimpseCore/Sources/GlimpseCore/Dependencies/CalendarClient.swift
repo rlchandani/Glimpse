@@ -8,26 +8,6 @@ public struct CalendarClient: Sendable {
     public var menuBarDateString: @Sendable (Date, MenuBarDisplayOptions) -> String = { _, _ in "" }
 }
 
-// MARK: - Cached formatters for menu bar date string
-
-private let menuBarDayOfWeekFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.dateFormat = "EEE"
-    return f
-}()
-
-private let menuBarMonthFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.dateFormat = "MMM"
-    return f
-}()
-
-private let menuBarYearFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.dateFormat = "yyyy"
-    return f
-}()
-
 extension CalendarClient: DependencyKey {
     public static var liveValue: Self {
         Self(
@@ -78,12 +58,12 @@ extension CalendarClient: DependencyKey {
                 var parts: [String] = []
 
                 if options.showDayOfWeek {
-                    parts.append(menuBarDayOfWeekFormatter.string(from: date))
+                    parts.append(date.formatted(.dateTime.weekday(.abbreviated)))
                 }
 
                 var dateParts: [String] = []
                 if options.showMonth {
-                    dateParts.append(menuBarMonthFormatter.string(from: date))
+                    dateParts.append(date.formatted(.dateTime.month(.abbreviated)))
                 }
                 if options.showDate {
                     dateParts.append("\(Calendar.current.component(.day, from: date))")
@@ -94,7 +74,7 @@ extension CalendarClient: DependencyKey {
                 }
 
                 if options.showYear {
-                    parts.append(menuBarYearFormatter.string(from: date))
+                    parts.append(date.formatted(.dateTime.year()))
                 }
 
                 return parts.joined(separator: ", ")

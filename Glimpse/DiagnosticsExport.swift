@@ -56,7 +56,7 @@ enum DiagnosticsExport {
         logProcess.standardOutput = pipe
         logProcess.standardError = pipe
         try logProcess.run()
-        let logData = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
+        let logData = await withCheckedContinuation { (continuation: CheckedContinuation<Data, Never>) in
             logProcess.terminationHandler = { _ in
                 let data = pipe.fileHandleForReading.readDataToEndOfFile()
                 continuation.resume(returning: data)

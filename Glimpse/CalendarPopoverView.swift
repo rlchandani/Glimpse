@@ -16,7 +16,7 @@ struct CalendarPopoverView: View {
     @State private var aiFieldActive: Bool = false
     @FocusState private var aiFieldFocused: Bool
     @State private var showQuitConfirm: Bool = false
-    @State private var preferencesStore = Store(initialState: PreferencesFeature.State()) {
+    @State private var preferencesStore = Store(initialState: PreferencesFeature.State.live()) {
         PreferencesFeature()
     }
     private let scrollThreshold: CGFloat = 5.0
