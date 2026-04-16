@@ -10,7 +10,7 @@ final class StatusItemView: NSView {
     private var currentLayoutMode: LayoutMode?
 
     private enum LayoutMode: Equatable {
-        case iconAndText(filled: Bool)
+        case iconAndText
         case iconOnly
         case textOnly
     }
@@ -32,8 +32,6 @@ final class StatusItemView: NSView {
 
         separatorView.translatesAutoresizingMaskIntoConstraints = false
         separatorView.wantsLayer = true
-        separatorView.layer?.backgroundColor = AppDesign.Colors.menuBarSeparator
-            .withAlphaComponent(AppDesign.StatusItem.borderOpacity).cgColor
         addSubview(separatorView)
 
         textLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -57,23 +55,26 @@ final class StatusItemView: NSView {
         isFilled = filled
 
         let isDark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        let contentColor: NSColor = filled
+            ? NSColor(white: 0.1, alpha: 1.0)
+            : (isDark ? .white : AppDesign.Colors.menuBarText)
         textLabel.textColor = filled
             ? NSColor(white: 0.1, alpha: 1.0)
             : AppDesign.Colors.menuBarText
-        iconView.contentTintColor = filled
-            ? NSColor(white: 0.1, alpha: 1.0)
-            : (isDark ? .white : AppDesign.Colors.menuBarText)
+        iconView.contentTintColor = contentColor
+        let separatorColor = filled ? NSColor(white: 0.1, alpha: 1.0) : (isDark ? .white : .black)
+        separatorView.layer!.backgroundColor = separatorColor.cgColor
 
         iconView.image = icon
         iconView.isHidden = !showIcon
-        separatorView.isHidden = !showIcon || !hasText || filled
+        separatorView.isHidden = !showIcon || !hasText
         textLabel.stringValue = text
         textLabel.isHidden = !hasText
 
         // Determine layout mode and only rebuild constraints when it changes
         let newMode: LayoutMode
         if showIcon && hasText {
-            newMode = .iconAndText(filled: filled)
+            newMode = .iconAndText
         } else if showIcon {
             newMode = .iconOnly
         } else {
@@ -93,7 +94,7 @@ final class StatusItemView: NSView {
         var width = padding * 2
         if showIcon { width += iconSize }
         if showIcon && hasText {
-            width += filled ? innerPadding : (innerPadding * 2 + 1)
+            width += innerPadding * 2 + 1
         }
         if hasText { width += textLabel.frame.width }
         frame.size.width = ceil(width)
@@ -107,7 +108,7 @@ final class StatusItemView: NSView {
         mode: LayoutMode, padding: CGFloat, innerPadding: CGFloat, iconSize: CGFloat
     ) -> [NSLayoutConstraint] {
         switch mode {
-        case let .iconAndText(filled):
+        case .iconAndText:
             return [
                 iconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: padding),
                 iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -126,9 +127,7 @@ final class StatusItemView: NSView {
                 separatorView.widthAnchor.constraint(equalToConstant: 1),
 
                 textLabel.leadingAnchor.constraint(
-                    equalTo: filled
-                        ? iconView.trailingAnchor
-                        : separatorView.trailingAnchor,
+                    equalTo: separatorView.trailingAnchor,
                     constant: innerPadding
                 ),
                 textLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -156,37 +155,6 @@ final class StatusItemView: NSView {
                     equalTo: trailingAnchor, constant: -padding
                 ),
             ]
-        }
-    }
-
-    override func draw(_ dirtyRect: NSRect) {
-        let rect = bounds.insetBy(dx: 1, dy: 1)
-        let path = NSBezierPath(
-            roundedRect: rect,
-            xRadius: AppDesign.StatusItem.borderCornerRadius,
-            yRadius: AppDesign.StatusItem.borderCornerRadius
-        )
-
-        if isFilled {
-            let isDark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            let fillColor = isDark
-                ? NSColor(white: 0.85, alpha: 1.0)
-                : NSColor(white: 0.92, alpha: 1.0)
-            fillColor.setFill()
-            path.fill()
-
-            let borderColor = isDark
-                ? NSColor(white: 0.65, alpha: 1.0)
-                : NSColor(white: 0.78, alpha: 1.0)
-            borderColor.setStroke()
-            path.lineWidth = AppDesign.StatusItem.borderWidth
-            path.stroke()
-        } else {
-            AppDesign.Colors.menuBarBorder
-                .withAlphaComponent(AppDesign.StatusItem.borderOpacity)
-                .setStroke()
-            path.lineWidth = AppDesign.StatusItem.borderWidth
-            path.stroke()
         }
     }
 

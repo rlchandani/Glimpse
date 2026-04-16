@@ -100,12 +100,21 @@ struct PreferencesView: View {
     }
 
     private var menuBarPreview: some View {
-        StatusItemPreview(
+        let filled = store.displayOptions.showFilledBackground
+        return StatusItemPreview(
             displayOptions: store.displayOptions,
             dateString: previewDateString
         )
-        .frame(height: AppDesign.StatusItem.height)
+        .frame(height: 22)
         .fixedSize()
+        .background(
+            RoundedRectangle(cornerRadius: AppDesign.StatusItem.borderCornerRadius)
+                .fill(filled ? Color(white: 0.92) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AppDesign.StatusItem.borderCornerRadius)
+                .strokeBorder(filled ? Color(white: 0.1) : Color.secondary.opacity(0.3), lineWidth: 1)
+        )
     }
 
     private var displayToggleRow: some View {

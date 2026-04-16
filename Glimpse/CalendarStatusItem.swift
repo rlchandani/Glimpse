@@ -113,6 +113,27 @@ final class CalendarStatusItem {
         button.frame.size = view.frame.size
         statusItem?.length = view.frame.width
         view.frame = button.bounds
+
+        // Style the button itself (our subview can't draw over the button's bezel)
+        button.wantsLayer = true
+        if let layer = button.layer {
+            let isDark = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            if options.showFilledBackground {
+                layer.cornerRadius = AppDesign.StatusItem.borderCornerRadius
+                layer.backgroundColor = (isDark
+                    ? NSColor(white: 0.85, alpha: 1.0)
+                    : NSColor(white: 0.92, alpha: 1.0)).cgColor
+                layer.borderColor = NSColor(white: 0.1, alpha: 1.0).cgColor
+                layer.borderWidth = 1.0
+            } else {
+                layer.cornerRadius = AppDesign.StatusItem.borderCornerRadius
+                layer.backgroundColor = nil
+                layer.borderColor = (isDark
+                    ? NSColor(white: 1.0, alpha: 0.3)
+                    : NSColor(white: 0.0, alpha: 0.2)).cgColor
+                layer.borderWidth = 1.0
+            }
+        }
     }
 
     /// Compute the next midnight (00:00:01) after the given date.

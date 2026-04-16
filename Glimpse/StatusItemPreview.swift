@@ -9,12 +9,14 @@ struct StatusItemPreview: NSViewRepresentable {
 
     func makeNSView(context: Context) -> StatusItemView {
         StatusItemView(
-            frame: NSRect(x: 0, y: 0, width: 100, height: AppDesign.StatusItem.height)
+            frame: NSRect(x: 0, y: 0, width: 100, height: 22)
         )
     }
 
     func updateNSView(_ view: StatusItemView, context: Context) {
         let filled = displayOptions.showFilledBackground
+        // Force light appearance so the preview looks correct in dark mode preferences
+        view.appearance = filled ? NSAppearance(named: .aqua) : nil
         let iconTextColor: NSColor = filled
             ? NSColor(white: 0.1, alpha: 1.0)
             : .labelColor

@@ -14,7 +14,14 @@ public struct PreferencesFeature: Sendable {
         public var showAISearch: Bool = true
         public var aiProvider: AIProvider = .auto
 
-        public init() {}
+        public init() {
+            let prefs = PreferencesClient.liveValue
+            self.startOfWeekday = prefs.loadStartOfWeekday()
+            self.workdays = prefs.loadWorkdays()
+            self.displayOptions = prefs.loadDisplayOptions()
+            self.showAISearch = prefs.loadShowAISearch()
+            self.aiProvider = prefs.loadAIProvider()
+        }
     }
 
     public enum Action: Sendable {
