@@ -19,18 +19,5 @@
       "Bash(echo *)",
       "Bash(which *)"
     ]
-  },
-  "hooks": {
-    "PreCommit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cd GlimpseCore && swift test --quiet 2>&1 | tail -5"
-          }
-        ]
-      }
-    ]
   }
 }

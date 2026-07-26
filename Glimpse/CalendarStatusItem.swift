@@ -13,28 +13,58 @@ extension Notification.Name {
 @MainActor
 final class CalendarStatusItem {
     private var statusItem: NSStatusItem?
-    private var statusItemView: StatusItemView?
     private var panel: CalendarPanel?
     private var midnightTimer: Timer?
     private var displayChangeObserver: Any?
     private var wakeObserver: Any?
     private var timeChangeObserver: Any?
+    // nonisolated(unsafe): only assigned once on the main actor in setup() and only
+    // read in deinit; the opaque observer token is never mutated concurrently. This
+    // lets the nonisolated deinit remove the observer without needing isolated deinit
+    // (a newer runtime feature). removeObserver is itself thread-safe.
+    nonisolated(unsafe) private var appearanceObserver: Any?
     // CalendarStatusItem uses .liveValue directly because it sits at the AppKit
     // boundary outside TCA's dependency graph. Extract pure logic (like nextMidnight)
     // into testable static methods instead of injecting clients here.
     private let preferencesClient = PreferencesClient.liveValue
     private let calendarClient = CalendarClient.liveValue
 
+    deinit {
+        // CalendarStatusItem is a lifetime singleton, but remove the distributed
+        // observer explicitly for correctness — block-based observers are retained
+        // by the center until removed. removeObserver is thread-safe.
+        if let appearanceObserver {
+            DistributedNotificationCenter.default.removeObserver(appearanceObserver)
+        }
+    }
+
     func setup() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
-        let view = StatusItemView(
-            frame: NSRect(x: 0, y: 0, width: 30, height: AppDesign.StatusItem.height)
-        )
-        statusItemView = view
-        statusItem?.button?.addSubview(view)
-        statusItem?.button?.target = self
-        statusItem?.button?.action = #selector(statusItemClicked)
+        if let button = statusItem?.button {
+            button.target = self
+            button.action = #selector(statusItemClicked)
+            button.imagePosition = .imageOnly
+        }
+
+        // Re-render when the system switches between light and dark. We must NOT
+        // observe the button's own effectiveAppearance via KVO: setting button.image
+        // invalidates the bezel, which re-evaluates appearance, which re-fires the
+        // observer — an observe→mutate→observe loop that pegs the CPU. The system's
+        // distributed appearance notification does not reenter on our image update.
+        appearanceObserver = DistributedNotificationCenter.default.addObserver(
+            forName: NSNotification.Name("AppleInterfaceThemeChangedNotification"),
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            // DistributedNotificationCenter delivers off the main thread; hop to
+            // the main actor before touching UI. The notification can also arrive
+            // before the button's effectiveAppearance flips, so re-render on the
+            // next runloop tick to read the updated appearance.
+            Task { @MainActor in
+                self?.updateMenuBarDisplay()
+            }
+        }
 
         updateMenuBarDisplay()
         scheduleMidnightRefresh()
@@ -99,44 +129,20 @@ final class CalendarStatusItem {
     }
 
     func updateMenuBarDisplay() {
-        guard let button = statusItem?.button,
-              let view = statusItemView
-        else { return }
+        guard let button = statusItem?.button else { return }
 
         let options = preferencesClient.loadDisplayOptions()
-        let iconTextColor: NSColor = options.showFilledBackground
-            ? NSColor(white: 0.1, alpha: 1.0)
-            : .labelColor
-        let icon = DateIconRenderer.render(textColor: iconTextColor)
         let dateString = calendarClient.menuBarDateString(Date(), options)
-        let showIcon = options.showIcon || dateString.isEmpty
+        let isDark = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
 
-        view.update(icon: icon, text: dateString, showIcon: showIcon, filled: options.showFilledBackground)
-
-        button.frame.size = view.frame.size
-        statusItem?.length = view.frame.width
-        view.frame = button.bounds
-
-        // Style the button itself (our subview can't draw over the button's bezel)
-        button.wantsLayer = true
-        if let layer = button.layer {
-            let isDark = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            if options.showFilledBackground {
-                layer.cornerRadius = AppDesign.StatusItem.borderCornerRadius
-                layer.backgroundColor = (isDark
-                    ? NSColor(white: 0.85, alpha: 1.0)
-                    : NSColor(white: 0.92, alpha: 1.0)).cgColor
-                layer.borderColor = NSColor(white: 0.1, alpha: 1.0).cgColor
-                layer.borderWidth = 1.0
-            } else {
-                layer.cornerRadius = AppDesign.StatusItem.borderCornerRadius
-                layer.backgroundColor = nil
-                layer.borderColor = (isDark
-                    ? NSColor(white: 1.0, alpha: 0.3)
-                    : NSColor(white: 0.0, alpha: 0.2)).cgColor
-                layer.borderWidth = 1.0
-            }
-        }
+        // Composite the entire item (border, fill, icon, separator, text) into the
+        // button's own image. No custom subview — that drives a redraw loop on
+        // macOS 26 (see MenuBarItemRenderer).
+        let image = MenuBarItemRenderer.render(
+            options: options, dateString: dateString, isDark: isDark
+        )
+        button.image = image
+        statusItem?.length = image.size.width
     }
 
     /// Compute the next midnight (00:00:01) after the given date.
@@ -256,6 +262,6 @@ final class CalendarStatusItem {
 
         panel?.setFrame(contentRect, display: true)
         panel?.makeKeyAndOrderFront(nil)
-        panel?.collapsePreferencesIfNeeded()
+        panel?.prepareForReopen()
     }
 }

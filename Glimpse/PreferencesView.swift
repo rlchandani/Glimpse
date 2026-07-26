@@ -100,21 +100,13 @@ struct PreferencesView: View {
     }
 
     private var menuBarPreview: some View {
-        let filled = store.displayOptions.showFilledBackground
-        return StatusItemPreview(
+        // The border and filled background are drawn into the composited image by
+        // MenuBarItemRenderer, so no SwiftUI background/overlay is needed here.
+        StatusItemPreview(
             displayOptions: store.displayOptions,
             dateString: previewDateString
         )
-        .frame(height: 22)
         .fixedSize()
-        .background(
-            RoundedRectangle(cornerRadius: AppDesign.StatusItem.borderCornerRadius)
-                .fill(filled ? Color(white: 0.92) : Color.clear)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: AppDesign.StatusItem.borderCornerRadius)
-                .strokeBorder(filled ? Color(white: 0.1) : Color.secondary.opacity(0.3), lineWidth: 1)
-        )
     }
 
     private var displayToggleRow: some View {

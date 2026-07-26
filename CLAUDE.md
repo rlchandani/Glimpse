@@ -53,8 +53,8 @@ open Glimpse.xcodeproj
 | `GlimpseApp.swift` | @main entry, AppDelegate |
 | `CalendarPanel.swift` | NSPanel (non-activating, pin support, text input, preferences collapse) |
 | `CalendarStatusItem.swift` | NSStatusItem, panel positioning, midnight refresh, NotificationCenter observer |
-| `StatusItemView.swift` | Menu bar rendering — bordered/filled, icon + text, `draw(_ dirtyRect:)` |
-| `StatusItemPreview.swift` | NSViewRepresentable wrapping StatusItemView for SwiftUI preferences preview |
+| `MenuBarItemRenderer.swift` | Composites the whole menu bar item (border/filled, icon + separator + text) into one `NSImage` set as `button.image`. No subview — a child view in the status button pegs CPU on macOS 26 (see gotchas.md) |
+| `StatusItemPreview.swift` | NSViewRepresentable rendering the same MenuBarItemRenderer image for the SwiftUI preferences preview |
 | `CalendarPopoverView.swift` | Main calendar UI, date selection, AI field, events, footer with quit confirm |
 | `PreferencesView.swift` | Grouped cards layout (Display, Calendar, Features) |
 | `MonthBorderShape.swift` | Contoured month border (SwiftUI Shape) |
@@ -87,7 +87,7 @@ open Glimpse.xcodeproj
 `onChange` on TCA `@ObservableState` bindings does NOT reliably fire. PreferencesView uses custom `Binding`s that post `NotificationCenter.menuBarDisplayDidChange`. CalendarStatusItem observes this and calls `updateMenuBarDisplay()`.
 
 ### 4. Filled Background Mode
-`StatusItemView.draw(_ dirtyRect:)` renders either bordered (stroke only) or filled (solid light gray + dark text). `DateIconRenderer.render(textColor:)` accepts color param for icon text. `StatusItemPreview` (NSViewRepresentable) ensures the preferences preview uses the identical rendering path.
+`MenuBarItemRenderer.render(options:dateString:isDark:)` composites either bordered (stroke only) or filled (solid light gray + dark content) into a single `NSImage` set as `button.image`. `DateIconRenderer.render(textColor:)` accepts a color param for the icon text. `StatusItemPreview` renders the identical image so the preferences preview cannot drift. NOTE: do not add a custom NSView to the status button — it causes a CPU redraw loop on macOS 26 (see gotchas.md).
 
 ### 5. Key Monitor Eats Enter
 `NSEvent.addLocalMonitorForEvents` intercepts keyCode 36 before SwiftUI `onSubmit`. Handle Enter explicitly in the monitor when AI field is active.

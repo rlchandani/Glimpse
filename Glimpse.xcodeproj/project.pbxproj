@@ -15,7 +15,7 @@
 		AA00000000000000000006 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000018 /* PreferencesView.swift */; };
 		AA00000000000000000008 /* CalendarPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001A /* CalendarPanel.swift */; };
 		AA00000000000000000009 /* CalendarStatusItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001B /* CalendarStatusItem.swift */; };
-		AA0000000000000000000A /* StatusItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001C /* StatusItemView.swift */; };
+		AA0000000000000000000A /* MenuBarItemRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001C /* MenuBarItemRenderer.swift */; };
 		DD00000000000000000030 /* StatusItemPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000031 /* StatusItemPreview.swift */; };
 		AA0000000000000000000C /* AppDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001E /* AppDesign.swift */; };
 		AA0000000000000000000D /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000001F /* AppLogger.swift */; };
@@ -31,6 +31,7 @@
 		CC00000000000000000001 /* GlimpseCore in Frameworks */ = {isa = PBXBuildFile; productRef = CC00000000000000000002 /* GlimpseCore */; };
 		BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000012 /* MonthBorderShapeTests.swift */; };
 		BB00000000000000000023 /* DateIconRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000013 /* DateIconRendererTests.swift */; };
+		DD00000000000000000040 /* MenuBarItemRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000041 /* MenuBarItemRendererTests.swift */; };
 		BB00000000000000000024 /* AppDesignTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000014 /* AppDesignTests.swift */; };
 		BB00000000000000000025 /* CalendarStatusItemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000015 /* CalendarStatusItemTests.swift */; };
 		BB00000000000000000026 /* DateParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000016 /* DateParserTests.swift */; };
@@ -58,7 +59,7 @@
 		AA00000000000000000018 /* PreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
 		AA0000000000000000001A /* CalendarPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPanel.swift; sourceTree = "<group>"; };
 		AA0000000000000000001B /* CalendarStatusItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarStatusItem.swift; sourceTree = "<group>"; };
-		AA0000000000000000001C /* StatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemView.swift; sourceTree = "<group>"; };
+		AA0000000000000000001C /* MenuBarItemRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarItemRenderer.swift; sourceTree = "<group>"; };
 		DD00000000000000000031 /* StatusItemPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemPreview.swift; sourceTree = "<group>"; };
 		AA0000000000000000001E /* AppDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDesign.swift; sourceTree = "<group>"; };
 		AA0000000000000000001F /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
@@ -75,6 +76,7 @@
 		BB00000000000000000007 /* GlimpseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GlimpseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB00000000000000000012 /* MonthBorderShapeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBorderShapeTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000013 /* DateIconRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateIconRendererTests.swift; sourceTree = "<group>"; };
+		DD00000000000000000041 /* MenuBarItemRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarItemRendererTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000014 /* AppDesignTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDesignTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000015 /* CalendarStatusItemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarStatusItemTests.swift; sourceTree = "<group>"; };
 		BB00000000000000000016 /* DateParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateParserTests.swift; sourceTree = "<group>"; };
@@ -118,7 +120,7 @@
 				AA00000000000000000018 /* PreferencesView.swift */,
 				AA0000000000000000001A /* CalendarPanel.swift */,
 				AA0000000000000000001B /* CalendarStatusItem.swift */,
-				AA0000000000000000001C /* StatusItemView.swift */,
+				AA0000000000000000001C /* MenuBarItemRenderer.swift */,
 				DD00000000000000000031 /* StatusItemPreview.swift */,
 				AA0000000000000000001E /* AppDesign.swift */,
 				AA0000000000000000001F /* AppLogger.swift */,
@@ -153,6 +155,7 @@
 			children = (
 				BB00000000000000000012 /* MonthBorderShapeTests.swift */,
 				BB00000000000000000013 /* DateIconRendererTests.swift */,
+				DD00000000000000000041 /* MenuBarItemRendererTests.swift */,
 				BB00000000000000000014 /* AppDesignTests.swift */,
 				BB00000000000000000015 /* CalendarStatusItemTests.swift */,
 				BB00000000000000000016 /* DateParserTests.swift */,
@@ -257,7 +260,7 @@
 				AA00000000000000000006 /* PreferencesView.swift in Sources */,
 				AA00000000000000000008 /* CalendarPanel.swift in Sources */,
 				AA00000000000000000009 /* CalendarStatusItem.swift in Sources */,
-				AA0000000000000000000A /* StatusItemView.swift in Sources */,
+				AA0000000000000000000A /* MenuBarItemRenderer.swift in Sources */,
 				DD00000000000000000030 /* StatusItemPreview.swift in Sources */,
 				AA0000000000000000000C /* AppDesign.swift in Sources */,
 				AA0000000000000000000D /* AppLogger.swift in Sources */,
@@ -279,6 +282,7 @@
 			files = (
 				BB00000000000000000022 /* MonthBorderShapeTests.swift in Sources */,
 				BB00000000000000000023 /* DateIconRendererTests.swift in Sources */,
+				DD00000000000000000040 /* MenuBarItemRendererTests.swift in Sources */,
 				BB00000000000000000024 /* AppDesignTests.swift in Sources */,
 				BB00000000000000000025 /* CalendarStatusItemTests.swift in Sources */,
 				BB00000000000000000026 /* DateParserTests.swift in Sources */,
@@ -358,7 +362,7 @@
 				CODE_SIGN_ENTITLEMENTS = Glimpse/Glimpse.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Glimpse/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -366,7 +370,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.2;
+				MARKETING_VERSION = 1.4.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rohit.Glimpse;
 				PRODUCT_MODULE_NAME = Glimpse;
 				PRODUCT_NAME = Glimpse;
@@ -383,7 +387,7 @@
 				CODE_SIGN_ENTITLEMENTS = Glimpse/Glimpse.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Glimpse/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -391,7 +395,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.2;
+				MARKETING_VERSION = 1.4.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rohit.Glimpse;
 				PRODUCT_MODULE_NAME = Glimpse;
 				PRODUCT_NAME = Glimpse;
@@ -406,9 +410,9 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.4.2;
+				MARKETING_VERSION = 1.4.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rohit.GlimpseTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -423,9 +427,9 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.4.2;
+				MARKETING_VERSION = 1.4.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rohit.GlimpseTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;

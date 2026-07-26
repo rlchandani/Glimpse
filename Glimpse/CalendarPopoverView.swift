@@ -337,12 +337,18 @@ struct CalendarPopoverView: View {
 
     // MARK: - Calendar Section
 
+    // Weekday symbol arrays are locale-stable for the process lifetime; read once
+    // instead of allocating Calendar.current on every render / grid cell.
+    private static let shortWeekdaySymbols = Calendar.current.shortWeekdaySymbols
+    private static let fullWeekdaySymbols = Calendar.current.weekdaySymbols
+    private static let veryShortWeekdaySymbols = Calendar.current.veryShortWeekdaySymbols
+
     private var calendarSection: some View {
         let cal = store.calendar
         let days = store.days
         let orderedDays = orderedWeekdaySymbols(startOfWeekday: store.startOfWeekday)
         let gridInfo = store.gridInfo
-        let shortNames = Calendar.current.shortWeekdaySymbols
+        let shortNames = Self.shortWeekdaySymbols
 
         if days.count != 42 {
             AppLogger.calendar.error("Expected 42 calendar days, got \(days.count)")
@@ -361,7 +367,7 @@ struct CalendarPopoverView: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(isWeekend ? .primary : .secondary)
                         .frame(maxWidth: .infinity)
-                        .accessibilityLabel(Calendar.current.weekdaySymbols[day.index - 1])
+                        .accessibilityLabel(Self.fullWeekdaySymbols[day.index - 1])
                 }
             }
 
@@ -419,7 +425,7 @@ struct CalendarPopoverView: View {
     }
 
     private func orderedWeekdaySymbols(startOfWeekday: Int) -> [(index: Int, symbol: String)] {
-        let symbols = Calendar.current.veryShortWeekdaySymbols
+        let symbols = Self.veryShortWeekdaySymbols
         return (0..<7).map { offset in
             let weekday = ((startOfWeekday - 1 + offset) % 7) + 1
             return (index: weekday, symbol: symbols[weekday - 1])
@@ -481,12 +487,17 @@ struct CalendarPopoverView: View {
             .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
+    // Thread-safe, allocation-free formatting (see gotchas.md: prefer Date.FormatStyle
+    // over DateFormatter). Allocating a DateFormatter per day cell was the dominant
+    // per-render cost — 42 allocations every body evaluation, evaluated eagerly by
+    // .accessibilityLabel regardless of whether VoiceOver is active.
+    private static let accessibilityDateStyle = Date.FormatStyle.dateTime
+        .weekday(.wide).month(.wide).day().year()
+
     private func dayAccessibilityLabel(
         _ day: GlimpseCore.CalendarDay, dayNumber: Int, isToday: Bool
     ) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        var label = formatter.string(from: day.date)
+        var label = day.date.formatted(Self.accessibilityDateStyle)
         if isToday { label += ", today" }
         if !day.isCurrentMonth { label += ", outside current month" }
         return label

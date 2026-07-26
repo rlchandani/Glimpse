@@ -2,9 +2,14 @@
 
 ## NSPanel Behavior
 
-- **onAppear doesn't fire on panel reshow**: NSPanel reused via orderOut/orderFront
-  doesn't trigger SwiftUI onAppear. Use `CalendarPanel.collapsePreferencesIfNeeded()`
-  called from CalendarStatusItem.showPanel() instead.
+- **onAppear/onDisappear don't fire on panel reshow**: NSPanel reused via
+  orderOut/orderFront doesn't trigger SwiftUI onAppear OR onDisappear, and the TCA
+  store is created once and lives for the panel's lifetime. So any reset wired to
+  `.onDisappear` (e.g. "reset to current month") silently never runs across a
+  hide/show cycle. Reset the reused store from the show path instead:
+  `CalendarPanel.prepareForReopen()` (sends `.prepareForReopen`) is called from
+  CalendarStatusItem.showPanel(). It collapses preferences, resets to the current
+  month with today selected, and reloads preferences.
 
 - **TextField in non-activating panel**: `.nonactivatingPanel` prevents keyboard focus.
   Must call `NSApp.activate(ignoringOtherApps: true)` via `panel.activateForTextInput()`.
@@ -13,6 +18,32 @@
 - **Key monitor intercepts Enter**: `NSEvent.addLocalMonitorForEvents` intercepts
   keyCode 36 before SwiftUI `onSubmit`. Handle Enter explicitly in the monitor when
   AI field is active.
+
+- **Custom NSView subview in status button = CPU loop (macOS 26)**: Adding a child
+  `NSView` to `NSStatusItem.button` pegs the CPU (~40% sustained, panel closed) on
+  macOS 26 Tahoe. The status button is backed by a scene-managed `NSStatusItemScene`/
+  `FBSScene`; a child view never settles its content frame, so `_setSelectedContentFrame
+  → updateSettings:transition → newFence` fires every runloop pass forever. Confirmed by
+  `sample` (continuous `CA::Transaction::commit`) and by controlled experiment (removing
+  the subview → 0% CPU). Fix: composite the whole item (border, fill, icon, separator,
+  text) into ONE `NSImage` via `MenuBarItemRenderer` and set it as `button.image`
+  (`.imageOnly`). Never add a subview to the status button.
+
+- **Don't KVO the status button's effectiveAppearance**: re-rendering on
+  `button.observe(\.effectiveAppearance)` loops — setting `button.image` invalidates the
+  bezel, which re-evaluates appearance, which re-fires the observer (observe→mutate→
+  observe, ~90% CPU). Use `DistributedNotificationCenter`'s
+  `AppleInterfaceThemeChangedNotification` instead; it doesn't reenter on image updates.
+
+- **intrinsicContentSize KVO resize loop (high CPU)**: `CalendarPanel` observes
+  `NSHostingView.intrinsicContentSize` to auto-size, and the handler calls
+  `setFrame`. But `setFrame` triggers a hosting-view layout pass that re-emits the
+  KVO notification → observe→setFrame→observe. The 0.05s debounce only rate-limits
+  it to ~20 Hz; it does NOT terminate the loop, so on some displays/macOS versions
+  it pegs the main thread while the panel is open. Fix: `resizeToFitContent()` has
+  an idempotency guard — if the computed frame matches the current frame within a
+  0.5pt tolerance, return without calling `setFrame`. Any future observe→mutate
+  cycle needs the same guard to converge.
 
 ## Build & Project
 

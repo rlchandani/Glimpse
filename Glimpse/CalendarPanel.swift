@@ -91,19 +91,34 @@ final class CalendarPanel: NSPanel {
             height: newHeight
         )
 
+        // Idempotency guard: bail if the frame is already effectively correct.
+        // setFrame triggers a hosting-view layout pass, which re-emits the
+        // intrinsicContentSize KVO that scheduled this call. Without this guard
+        // the observe -> setFrame -> observe cycle never reaches a fixed point
+        // and pegs the main thread at the debounce rate (~20 Hz). Comparing with
+        // a sub-pixel tolerance lets the loop settle instead of spinning.
+        let tolerance: CGFloat = 0.5
+        if abs(newFrame.height - currentFrame.height) < tolerance
+            && abs(newFrame.width - currentFrame.width) < tolerance
+            && abs(newFrame.origin.y - currentFrame.origin.y) < tolerance {
+            hasShownOnce = true
+            return
+        }
+
         // Skip animation on first show to avoid visible resize jump
         let shouldAnimate = hasShownOnce
         hasShownOnce = true
         setFrame(newFrame, display: true, animate: shouldAnimate)
     }
 
-    /// Reset UI state when panel is re-shown
-    func collapsePreferencesIfNeeded() {
-        if calendarStore.showingPreferences {
-            calendarStore.send(.togglePreferences)
-        }
-        // Reload preferences in case they changed while panel was hidden
-        calendarStore.send(.reloadPreferences)
+    /// Reset UI state when panel is re-shown.
+    ///
+    /// The panel is reused via orderOut/orderFront, so SwiftUI onAppear/onDisappear
+    /// do not fire (see gotchas.md). This is the reliable hook to reset the reused
+    /// TCA store: collapse preferences, return to the current month with today
+    /// selected, and reload any preferences changed while hidden.
+    func prepareForReopen() {
+        calendarStore.send(.prepareForReopen)
     }
 
     /// Activate the app so TextField can receive focus

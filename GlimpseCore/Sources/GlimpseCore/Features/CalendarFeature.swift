@@ -57,6 +57,7 @@ public struct CalendarFeature: Sendable {
         case togglePreferences
         case closePanel
         case onDisappear
+        case prepareForReopen
         case requestCalendarAccess
         case calendarAccessResult(Bool)
         case eventsLoaded([CalendarEvent])
@@ -213,6 +214,27 @@ public struct CalendarFeature: Sendable {
                 state.displayedMonth = date.now
                 recomputeDays(&state)
                 return .none
+
+            case .prepareForReopen:
+                // The NSPanel is reused via orderOut/orderFront, so SwiftUI
+                // onAppear/onDisappear do not fire (see gotchas.md). This action
+                // is invoked from the show path to reset the reused store: return
+                // to the current month with today selected, and pick up any
+                // preference changes made while the panel was hidden.
+                state.showingPreferences = false
+                state.displayedMonth = date.now
+                state.selectedDate = date.now
+                state.startOfWeekday = preferencesClient.loadStartOfWeekday()
+                state.workdays = preferencesClient.loadWorkdays()
+                state.showAISearch = preferencesClient.loadShowAISearch()
+                recomputeDays(&state)
+                // selectedDate was just reset to today; refresh today's events so a
+                // panel reopened after events changed doesn't show stale data.
+                guard state.calendarAccessGranted else { return .none }
+                return .run { send in
+                    let events = await eventKitClient.fetchTodayEvents()
+                    await send(.eventsLoaded(events))
+                }
             }
         }
     }

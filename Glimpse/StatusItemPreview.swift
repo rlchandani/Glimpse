@@ -1,33 +1,27 @@
+import AppKit
 import GlimpseCore
 import SwiftUI
 
-/// Wraps the real StatusItemView in SwiftUI so the preferences preview
-/// uses the exact same rendering path as the actual menu bar item.
+/// Renders the preferences preview using the exact same image as the real menu
+/// bar item (`MenuBarItemRenderer`), so the preview can never drift from reality.
 struct StatusItemPreview: NSViewRepresentable {
     let displayOptions: MenuBarDisplayOptions
     let dateString: String
 
-    func makeNSView(context: Context) -> StatusItemView {
-        StatusItemView(
-            frame: NSRect(x: 0, y: 0, width: 100, height: 22)
-        )
+    func makeNSView(context: Context) -> NSImageView {
+        let view = NSImageView()
+        view.imageScaling = .scaleNone
+        return view
     }
 
-    func updateNSView(_ view: StatusItemView, context: Context) {
-        let filled = displayOptions.showFilledBackground
-        // Force light appearance so the preview looks correct in dark mode preferences
-        view.appearance = filled ? NSAppearance(named: .aqua) : nil
-        let iconTextColor: NSColor = filled
-            ? NSColor(white: 0.1, alpha: 1.0)
-            : .labelColor
-        let icon = DateIconRenderer.render(textColor: iconTextColor)
-        let showIcon = displayOptions.showIcon || dateString.isEmpty
-
-        view.update(
-            icon: icon,
-            text: dateString,
-            showIcon: showIcon,
-            filled: filled
+    func updateNSView(_ view: NSImageView, context: Context) {
+        // The menu bar item adapts to the system appearance; the preview always
+        // shows the light-mode rendering so it reads correctly inside the
+        // preferences card regardless of the app's appearance.
+        view.image = MenuBarItemRenderer.render(
+            options: displayOptions,
+            dateString: dateString,
+            isDark: false
         )
     }
 }

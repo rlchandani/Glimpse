@@ -186,6 +186,104 @@ struct CalendarFeatureTests {
     }
 
     @Test
+    func goToToday_resetsMonthAndSelection() async {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let oldMonth = Date(timeIntervalSince1970: 0)
+
+        var state = CalendarFeature.State(displayedMonth: oldMonth)
+        state.selectedDate = oldMonth
+
+        let store = TestStore(initialState: state) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.date = .constant(now)
+            $0.calendarClient.calendarDays = { _, _ in [] }
+            $0.calendarClient.gridInfo = { _ in GridInfo(startCol: 0, endCol: 6, endRow: 5) }
+        }
+
+        await store.send(.goToToday) {
+            $0.displayedMonth = now
+            $0.selectedDate = now
+        }
+    }
+
+    @Test
+    func prepareForReopen_resetsToTodayAndReloadsPreferences() async {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let oldMonth = Date(timeIntervalSince1970: 0)
+        let testDays = [CalendarDay(date: now, isCurrentMonth: true)]
+
+        // Simulate a panel left on an old month with a stale selection and prefs open.
+        var state = CalendarFeature.State(displayedMonth: oldMonth)
+        state.selectedDate = oldMonth
+        state.showingPreferences = true
+
+        let store = TestStore(initialState: state) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.date = .constant(now)
+            $0.preferencesClient.loadStartOfWeekday = { 2 }
+            $0.preferencesClient.loadWorkdays = { [2, 3, 4] }
+            $0.preferencesClient.loadShowAISearch = { false }
+            $0.calendarClient.calendarDays = { _, _ in testDays }
+            $0.calendarClient.gridInfo = { _ in GridInfo(startCol: 0, endCol: 2, endRow: 4) }
+        }
+
+        await store.send(.prepareForReopen) {
+            $0.showingPreferences = false
+            $0.displayedMonth = now
+            $0.selectedDate = now
+            $0.startOfWeekday = 2
+            $0.workdays = [2, 3, 4]
+            $0.showAISearch = false
+            $0.days = testDays
+            $0.gridInfo = GridInfo(startCol: 0, endCol: 2, endRow: 4)
+        }
+    }
+
+    @Test
+    func prepareForReopen_withCalendarAccess_refetchesTodayEvents() async {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let oldMonth = Date(timeIntervalSince1970: 0)
+        let todayEvent = CalendarEvent(
+            id: "1", title: "Today Meeting",
+            startDate: now, endDate: now,
+            isAllDay: false
+        )
+
+        // Panel left on an old month with stale events from a previous session.
+        var state = CalendarFeature.State(displayedMonth: oldMonth)
+        state.selectedDate = oldMonth
+        state.calendarAccessGranted = true
+        state.todayEvents = []  // stale
+
+        let store = TestStore(initialState: state) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.date = .constant(now)
+            $0.preferencesClient.loadStartOfWeekday = { 1 }
+            $0.preferencesClient.loadWorkdays = { [2, 3, 4, 5, 6] }
+            $0.preferencesClient.loadShowAISearch = { true }
+            $0.calendarClient.calendarDays = { _, _ in [] }
+            $0.calendarClient.gridInfo = { _ in GridInfo(startCol: 0, endCol: 6, endRow: 5) }
+            $0.eventKitClient.fetchTodayEvents = { [todayEvent] }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.prepareForReopen) {
+            $0.displayedMonth = now
+            $0.selectedDate = now
+        }
+
+        // Reopening with calendar access must refresh today's events, not leave
+        // whatever was loaded for the previously-selected date.
+        await store.receive(\.eventsLoaded) {
+            $0.todayEvents = [todayEvent]
+        }
+    }
+
+    @Test
     func dateTapped_selectsDate() async {
         let cal = Calendar.current
         let march15 = cal.date(from: DateComponents(year: 2026, month: 3, day: 15))!
